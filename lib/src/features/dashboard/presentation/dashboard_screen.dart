@@ -10,21 +10,55 @@ import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_shell_app_bar.dart';
+import '../../../core/widgets/date_range_picker_dialog.dart';
 import '../../auth/application/auth_controller.dart';
 
 /// Dashboard home — bound to live data via [dashboardDataProvider].
 /// Hardcoded numbers were replaced with reactive bindings; while data is
 /// loading the cells fall back to `—`. Pull-to-refresh re-invokes the
 /// provider; errors render as a banner with a retry button.
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  // Earliest selectable date — kept in sync between the picker (firstDate)
+  // and the pill's preset detection (so "All Time" resolves consistently).
+  static final DateTime _firstDate = DateTime(2020);
+
+  late DateTimeRange _range;
+
+  @override
+  void initState() {
+    super.initState();
+    // Default to today; the user can switch to other presets from the pill.
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    _range = DateTimeRange(start: today, end: today);
+  }
+
+  Future<void> _pickRange() async {
+    final picked = await showAdvancedDateRangePicker(
+      context,
+      initialRange: _range,
+      firstDate: _firstDate,
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && mounted) {
+      setState(() => _range = picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final session = ref.watch(authControllerProvider);
     final firstName = session?.userName.split(' ').first ?? 'there';
 
-    final asyncData = ref.watch(dashboardDataProvider);
+    final asyncData = ref.watch(dashboardDataProvider(_range));
     final data = asyncData.value;
     final isLoading = asyncData.isLoading;
     final errorMessage = asyncData.hasError ? _describeError(asyncData.error) : null;
@@ -41,8 +75,8 @@ class DashboardScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(dashboardDataProvider);
-          await ref.read(dashboardDataProvider.future);
+          ref.invalidate(dashboardDataProvider(_range));
+          await ref.read(dashboardDataProvider(_range).future);
         },
         color: AppColors.primary,
         child: ListView(
@@ -54,12 +88,18 @@ class DashboardScreen extends ConsumerWidget {
           ),
           children: [
             _Greeting(name: firstName),
+            const SizedBox(height: AppSpacing.md),
+            _DateRangePill(
+              range: _range,
+              firstDate: _firstDate,
+              onTap: _pickRange,
+            ),
             const SizedBox(height: AppSpacing.lg),
             // Error state — only shows on outright failure.
             if (errorMessage != null) ...[
               _ErrorBanner(
                 message: errorMessage,
-                onRetry: () => ref.invalidate(dashboardDataProvider),
+                onRetry: () => ref.invalidate(dashboardDataProvider(_range)),
               ),
               const SizedBox(height: AppSpacing.lg),
             ],
@@ -88,6 +128,67 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             _TopProducts(products: data?.topProducts, isLoading: isLoading),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Date range pill ──────────────────────────────────────────────────────
+
+/// Compact pill that shows the matching preset name (or "Custom") for the
+/// active [range]. Width auto-fits the label so it sits to the left under
+/// the greeting like Stripe / Shopify admin filters.
+class _DateRangePill extends StatelessWidget {
+  const _DateRangePill({
+    required this.range,
+    required this.firstDate,
+    required this.onTap,
+  });
+
+  final DateTimeRange range;
+  final DateTime firstDate;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = dateRangePresetLabel(range, firstDate: firstDate);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.outlineVariant),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_today_outlined,
+                    size: 16, color: AppColors.primary),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  label,
+                  style: AppTypography.bodySm.copyWith(
+                    color: AppColors.onBackground,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.expand_more,
+                    size: 18, color: AppColors.onSurfaceVariant),
+              ],
+            ),
+          ),
         ),
       ),
     );

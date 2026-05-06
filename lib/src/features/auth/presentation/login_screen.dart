@@ -55,8 +55,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       setState(() => _error = e.message);
     } on NetworkException {
       setState(() => _error = 'No internet connection.');
-    } catch (e) {
-      print('LOGIN ERROR: $e');
+    } catch (_) {
       setState(() => _error = 'Login failed. Try again.');
     } finally {
       if (mounted) setState(() => _loading = false);

@@ -41,7 +41,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   void initState() {
     super.initState();
     // TODO: when editing, fetch the live product via
-    // `ref.read(akhiyanApiProvider).products.detail(int.parse(widget.productId!))`
+    // `ref.read(akhiyanApiProvider).products.detail(widget.productId!)`
     // and prefill controllers from that response.
     _name = TextEditingController();
     _description = TextEditingController();

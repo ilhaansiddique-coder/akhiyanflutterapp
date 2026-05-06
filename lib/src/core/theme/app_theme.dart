@@ -170,6 +170,21 @@ class AppTheme {
           );
         }),
       ),
+      scrollbarTheme: ScrollbarThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.dragged) ||
+              states.contains(WidgetState.hovered)) {
+            return AppColors.primary;
+          }
+          return AppColors.primary.withValues(alpha: 0.6);
+        }),
+        trackColor: WidgetStateProperty.all(
+          AppColors.primary.withValues(alpha: 0.1),
+        ),
+        thickness: WidgetStateProperty.all(8),
+        radius: const Radius.circular(8),
+        thumbVisibility: WidgetStateProperty.all(true),
+      ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceContainer,
         side: BorderSide.none,
