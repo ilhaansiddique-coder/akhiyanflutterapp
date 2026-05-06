@@ -1,0 +1,47 @@
+{
+  "@@locale": "en",
+  "appName": "Akhiyan Admin",
+  "appTagline": "Store Management",
+
+  "navDashboard": "Dashboard",
+  "navOrders": "Orders",
+  "navProducts": "Products",
+  "navMarketing": "Marketing",
+  "navMore": "More",
+
+  "loginTitle": "Akhiyan Admin",
+  "loginSubtitle": "Store Management",
+  "loginEmailLabel": "Email",
+  "loginEmailHint": "admin@akhiyan.com",
+  "loginPasswordLabel": "Password",
+  "loginPasswordHint": "••••••••",
+  "loginSubmit": "Login",
+  "loginForgot": "Forgot Password?",
+  "loginTrustedBy": "Trusted by global commerce leaders",
+
+  "dashboardGreetingMorning": "Good morning, {name}",
+  "@dashboardGreetingMorning": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "dashboardSubtitle": "Here's what's happening with your store today.",
+
+  "statTodaysOrders": "Today's Orders",
+  "statTodaysRevenue": "Today's Revenue",
+  "statPendingOrders": "Pending Orders",
+  "statLowStock": "Low Stock Items",
+
+  "actionNewProduct": "New Product",
+  "actionUpdateStock": "Update Stock",
+  "actionLaunchCampaign": "Launch Campaign",
+  "actionExportReport": "Export Report",
+
+  "sectionRecentOrders": "Recent Orders",
+  "sectionTopProducts": "Top Products",
+  "viewAll": "View All",
+  "analyzeInventory": "Analyze Inventory",
+
+  "comingSoon": "{feature} — coming soon",
+  "@comingSoon": {
+    "placeholders": { "feature": { "type": "String" } }
+  }
+}

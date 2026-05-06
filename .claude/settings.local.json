@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(flutter run *)",
+      "Bash(mkdir -p /tmp/akhiyan_screenshots)",
+      "Bash(adb -s emulator-5554 exec-out screencap -p)",
+      "Read(//tmp/**)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 exec-out screencap -p)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input swipe 360 600 360 1500 300)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 600)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell wm size)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell wm density)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input keyevent KEYCODE_BACK)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 700)",
+      "Bash(tasklist)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 975)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell monkey -p com.akhiyan.akhiyan_admin -c android.intent.category.LAUNCHER 1)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 625)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input text a@b.com)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 825)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input text x)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 1037)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input swipe 360 1000 360 300 400)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input keyevent 111)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 977)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 56 107)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 72 1140)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input swipe 360 1000 360 200 400)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 360 1140)",
+      "Bash(dart format *)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 216 1140)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input keyevent 4)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 504 1140)",
+      "Bash(/c/Users/User/AppData/Local/Android/Sdk/platform-tools/adb.exe -s emulator-5554 shell input tap 648 1140)",
+      "mcp__Neon__list_projects",
+      "mcp__Neon__run_sql"
+    ]
+  }
+}
