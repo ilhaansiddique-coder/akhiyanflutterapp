@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'src/core/notifications/notification_store.dart';
 import 'src/core/router/app_router.dart';
 import 'src/core/sync/sync_invalidation.dart';
 import 'src/core/theme/live_theme.dart';
@@ -17,6 +18,11 @@ class AkhiyanAdminApp extends ConsumerWidget {
     // colour changes, etc.) reach every subscribed screen without each
     // screen needing its own subscription.
     ref.watch(syncInvalidationProvider);
+    // Same reason for the notification store: it ingests SSE events with
+    // a `notify` payload into the in-app notification panel even when the
+    // bell screen isn't currently open. Without this read here it would
+    // build lazily on first navigation and miss earlier events.
+    ref.watch(notificationStoreProvider);
 
     final router = ref.watch(appRouterProvider);
     final theme = ref.watch(activeThemeDataProvider);

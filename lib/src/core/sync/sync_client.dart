@@ -18,28 +18,88 @@ import '../api/secure_token_storage.dart';
 class SyncState {
   final Map<String, int> versions;
   final bool connected;
+  /// The most recent event received from the stream. Distinct from
+  /// [versions] (which is a fold of all events) because consumers like
+  /// the NotificationStore care about each individual event, not the
+  /// running aggregate. `null` until the first bump arrives.
+  final SyncEvent? lastEvent;
 
-  const SyncState({this.versions = const {}, this.connected = false});
+  const SyncState({
+    this.versions = const {},
+    this.connected = false,
+    this.lastEvent,
+  });
 
-  SyncState copyWith({Map<String, int>? versions, bool? connected}) =>
+  SyncState copyWith({
+    Map<String, int>? versions,
+    bool? connected,
+    SyncEvent? lastEvent,
+  }) =>
       SyncState(
         versions: versions ?? this.versions,
         connected: connected ?? this.connected,
+        lastEvent: lastEvent ?? this.lastEvent,
       );
 
   int versionOf(String channel) => versions[channel] ?? 0;
 }
 
-/// SSE event payload as emitted by the server: `{ "channel": "...", "version": N }`.
+/// User-facing notification metadata attached to a bump. Mirrors the
+/// `SyncNotify` interface in `src/lib/sync.ts` on the backend
+/// (severity is one of: info, warn, alert).
+@immutable
+class SyncNotify {
+  final String kind;
+  final String title;
+  final String body;
+  final String? href;
+  final String? icon;
+  final String? severity; // "info" | "warn" | "alert"
+
+  const SyncNotify({
+    required this.kind,
+    required this.title,
+    required this.body,
+    this.href,
+    this.icon,
+    this.severity,
+  });
+
+  factory SyncNotify.fromJson(Map<String, dynamic> json) => SyncNotify(
+        kind: json['kind'] as String,
+        title: json['title'] as String,
+        body: json['body'] as String,
+        href: json['href'] as String?,
+        icon: json['icon'] as String?,
+        severity: json['severity'] as String?,
+      );
+}
+
+/// SSE event payload from the server. Backend wire shape:
+///   `{ "channel": "...", "version": N, "ts": <ms>, "notify"?: {...} }`
+/// The `ts` falls back to local clock if the server snapshot omits it
+/// (older snapshots before the notify protocol shipped).
 @immutable
 class SyncEvent {
   final String channel;
   final int version;
-  const SyncEvent({required this.channel, required this.version});
+  final int ts;
+  final SyncNotify? notify;
+
+  const SyncEvent({
+    required this.channel,
+    required this.version,
+    required this.ts,
+    this.notify,
+  });
 
   factory SyncEvent.fromJson(Map<String, dynamic> json) => SyncEvent(
         channel: json['channel'] as String,
         version: (json['version'] as num).toInt(),
+        ts: (json['ts'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
+        notify: json['notify'] is Map<String, dynamic>
+            ? SyncNotify.fromJson(json['notify'] as Map<String, dynamic>)
+            : null,
       );
 }
 
@@ -146,9 +206,9 @@ class SyncClient extends Notifier<SyncState> {
       // Replace instead of mutating so Riverpod listeners notice the change.
       final next = Map<String, int>.from(state.versions);
       next[evt.channel] = evt.version;
-      state = state.copyWith(versions: next);
+      state = state.copyWith(versions: next, lastEvent: evt);
     } catch (e) {
-      debugPrint('[sync] bad event payload: $json — $e');
+      debugPrint('[sync] bad event payload: $json - $e');
     }
   }
 
