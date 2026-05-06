@@ -1,19 +1,26 @@
 /// Environment configuration for API endpoints.
 ///
-/// Use --dart-define to set API_URL at build/run time:
+/// The Flutter admin app talks to the backend's mobile namespace at
+/// `/api/v1/m/*`. That namespace exposes the same resources as the dashboard
+/// admin routes but with camelCase keys + a `{ data, pagination? }` envelope
+/// the Dart fromJson decoders expect. SSE lives at `/api/v1/m/sync/stream`
+/// (re-exported from `/api/v1/sync/stream`) so all live traffic stays under
+/// the same prefix.
 ///
-/// Local development (web on port 61346):
-///   flutter run -d chrome --dart-define=API_URL=http://localhost:3000/api/v1
+/// Override at build/run time using --dart-define:
 ///
-/// Local development (Android emulator):
-///   flutter run --dart-define=API_URL=http://10.0.2.2:3000/api/v1
+///   # Local web (Chrome)
+///   flutter run -d chrome --dart-define=API_URL=http://localhost:3000/api/v1/m
 ///
-/// Local development (physical phone on same network):
-///   flutter run --dart-define=API_URL=http://192.168.1.100:3000/api/v1
+///   # Android emulator (10.0.2.2 → host's localhost)
+///   flutter run --dart-define=API_URL=http://10.0.2.2:3000/api/v1/m
 ///
-/// Production:
-///   flutter build apk --dart-define=API_URL=https://akhiyanbd.com/api/v1
-///   flutter build ios --dart-define=API_URL=https://akhiyanbd.com/api/v1
+///   # Physical phone on same Wi-Fi (replace IP with your PC's LAN address)
+///   flutter run --dart-define=API_URL=http://192.168.1.100:3000/api/v1/m
+///
+///   # Production
+///   flutter build apk --dart-define=API_URL=https://akhiyanbd.com/api/v1/m
+///   flutter build ios --dart-define=API_URL=https://akhiyanbd.com/api/v1/m
 library;
 
 class Env {
@@ -21,17 +28,14 @@ class Env {
   /// Defaults to localhost for web/desktop development.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:3000/api/v1',
+    defaultValue: 'http://localhost:3000/api/v1/m',
   );
 
-  /// Whether running in production mode.
-  static bool get isProduction => apiBaseUrl.contains('akhiyanbd.com');
-
-  /// Get full URL for an endpoint.
+  /// Optional tenant slug for the future SaaS migration. Sent as
+  /// `X-Tenant-Slug` header on every request. Default empty (single-tenant
+  /// today) — the backend ignores the header until the multi-tenant routing
+  /// lands. Override per-build when needed:
   ///
-  /// Example: Env.getUrl('/products') → 'http://localhost:3000/api/v1/products'
-  static String getUrl(String endpoint) {
-    final cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
-    return '$apiBaseUrl$cleanEndpoint';
-  }
+  ///   flutter run --dart-define=TENANT_SLUG=akhiyanbd
+  static const String tenantSlug = String.fromEnvironment('TENANT_SLUG', defaultValue: '');
 }

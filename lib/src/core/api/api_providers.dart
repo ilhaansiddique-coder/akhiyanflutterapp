@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/akhiyan_api.dart';
+import '../../../config/env.dart';
+import '../../features/auth/application/auth_controller.dart';
 import 'api_config.dart';
 import 'secure_token_storage.dart';
 
@@ -15,20 +18,33 @@ import 'secure_token_storage.dart';
 /// final data = await api.dashboard.fetch();
 /// ```
 final akhiyanApiProvider = Provider<AkhiyanApi>((ref) {
-  final api = AkhiyanApi(
+  late final AkhiyanApi api;
+  api = AkhiyanApi(
     baseUrl: ApiConfig.baseUrl,
     storage: SecureTokenStorage(),
     onAuthExpired: () {
-      // TODO: invalidate auth controller + push to /login when this fires.
+      // Tokens already cleared by AkhiyanApi.request on 401. Invalidate the
+      // auth controller so its state goes null; the GoRouter redirect then
+      // kicks the user to /login.
+      ref.invalidate(authControllerProvider);
     },
   );
+  // Forward-compat for the SaaS migration: pass through Env.tenantSlug if
+  // set at build time. Empty by default, which the backend ignores today.
+  if (Env.tenantSlug.isNotEmpty) api.tenantSlug = Env.tenantSlug;
   ref.onDispose(api.close);
   return api;
 });
 
-/// Async dashboard data — refreshable via `ref.invalidate(dashboardDataProvider)`.
-final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>(
-  (ref) => ref.watch(akhiyanApiProvider).dashboard.fetch(),
+/// Async dashboard data scoped to a [DateTimeRange]. Keyed by the range so
+/// switching presets on the dashboard pill re-fetches transparently. Refresh
+/// the *current* range via `ref.invalidate(dashboardDataProvider(range))`.
+final dashboardDataProvider =
+    FutureProvider.autoDispose.family<DashboardData, DateTimeRange>(
+  (ref, range) => ref.watch(akhiyanApiProvider).dashboard.fetch(
+        from: range.start,
+        to: range.end,
+      ),
 );
 
 /// Default page size for paginated list screens. Small enough to feel snappy

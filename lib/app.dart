@@ -4,18 +4,26 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/core/router/app_router.dart';
-import 'src/core/theme/app_theme.dart';
+import 'src/core/sync/sync_invalidation.dart';
+import 'src/core/theme/live_theme.dart';
 
 class AkhiyanAdminApp extends ConsumerWidget {
   const AkhiyanAdminApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Mount the SSE invalidation listener once at the root so live updates
+    // from the backend (admin saves a banner, an order comes in, theme
+    // colour changes, etc.) reach every subscribed screen without each
+    // screen needing its own subscription.
+    ref.watch(syncInvalidationProvider);
+
     final router = ref.watch(appRouterProvider);
+    final theme = ref.watch(activeThemeDataProvider);
     return MaterialApp.router(
       title: 'Akhiyan Admin',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: theme,
       scrollBehavior: const _AppScrollBehavior(),
       routerConfig: router,
       localizationsDelegates: const [
