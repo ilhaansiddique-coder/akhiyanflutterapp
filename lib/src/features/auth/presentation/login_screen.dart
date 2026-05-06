@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/akhiyan_api.dart';
+import '../../../core/api/api_providers.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
@@ -48,6 +51,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             password: _password.text,
           );
       if (!mounted) return;
+      // Warm up caches in parallel — don't await; navigation continues
+      // immediately so data is loading while the route transition animates.
+      // The default range here MUST match dashboard_screen's initial _range
+      // (midnight-today → midnight-today) so the cache key lines up.
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final defaultRange = DateTimeRange(start: today, end: today);
+      unawaited(ref.read(dashboardDataProvider(defaultRange).future));
+      unawaited(ref.read(productsListProvider.notifier).goToPage(1));
+      unawaited(ref.read(currentUserProvider.future));
       context.go(AppRoute.dashboard.path);
     } on ArgumentError {
       setState(() => _error = 'Email and password are required.');

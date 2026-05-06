@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../api/akhiyan_api.dart' as api;
+import '../../../core/api/api_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_card.dart';
 import '../domain/product.dart';
 
-/// Combined Add/Edit product form. Merged from `add_product_2/code.html`
-/// (sections: images, basic info, pricing, stock, variants, status, SEO)
-/// and the prior Flutter port (3-state status, add/edit dual mode,
-/// validation). Primary CTAs live in a sticky bottom bar — "Save as Draft"
-/// + "Publish" in add mode, "Delete" + "Save Changes" in edit mode.
-class ProductFormScreen extends StatefulWidget {
+/// Combined Add/Edit product form. Wired to `/products` via
+/// [akhiyanApiProvider]: GET on edit-mode init, POST on Publish/Save Draft,
+/// PATCH on Save Changes, DELETE on Delete. Refreshes the products and
+/// inventory lists on success.
+class ProductFormScreen extends ConsumerStatefulWidget {
   const ProductFormScreen({this.productId, super.key});
 
   final String? productId;
 
   @override
-  State<ProductFormScreen> createState() => _ProductFormScreenState();
+  ConsumerState<ProductFormScreen> createState() => _ProductFormScreenState();
 }
 
-class _ProductFormScreenState extends State<ProductFormScreen> {
+class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _description;
@@ -35,23 +37,59 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   String _category = 'Footwear';
   ProductStatus _status = ProductStatus.draft;
 
+  bool _loading = false;
+  bool _saving = false;
+  Object? _loadError;
+
   bool get _isEdit => widget.productId != null;
 
   @override
   void initState() {
     super.initState();
-    // TODO: when editing, fetch the live product via
-    // `ref.read(akhiyanApiProvider).products.detail(widget.productId!)`
-    // and prefill controllers from that response.
     _name = TextEditingController();
     _description = TextEditingController();
     _brand = TextEditingController();
     _price = TextEditingController();
     _salePrice = TextEditingController();
     _stock = TextEditingController();
-    _sku = TextEditingController(text: widget.productId ?? '');
+    _sku = TextEditingController();
     _metaTitle = TextEditingController();
     _metaDescription = TextEditingController();
+    if (_isEdit) {
+      _loading = true;
+      Future.microtask(_loadExisting);
+    }
+  }
+
+  Future<void> _loadExisting() async {
+    try {
+      final p =
+          await ref.read(akhiyanApiProvider).products.detail(widget.productId!);
+      if (!mounted) return;
+      _name.text = p.name;
+      _description.text = p.description ?? '';
+      _stock.text = p.stock.toString();
+      // Backend pricing: price = current selling price, originalPrice =
+      // strikethrough. Mirror that in the form: if originalPrice exists, the
+      // product is on sale → show originalPrice in "Regular" and price in
+      // "Sale". Otherwise price goes in "Regular".
+      if (p.originalPrice != null && p.originalPrice! > p.price) {
+        _price.text = p.originalPrice!.toStringAsFixed(0);
+        _salePrice.text = p.price.toStringAsFixed(0);
+      } else {
+        _price.text = p.price.toStringAsFixed(0);
+      }
+      setState(() {
+        _status = p.isActive ? ProductStatus.active : ProductStatus.draft;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -68,21 +106,87 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     super.dispose();
   }
 
-  void _save({ProductStatus? overrideStatus}) {
+  /// Builds the JSON body sent to POST /products and PATCH /products/:id.
+  /// Only includes fields the form actually exposes.
+  Map<String, dynamic> _buildPayload(ProductStatus finalStatus) {
+    final regular = double.tryParse(_price.text.trim()) ?? 0;
+    final saleStr = _salePrice.text.trim();
+    final sale = saleStr.isEmpty ? null : double.tryParse(saleStr);
+    final hasSale = sale != null && sale > 0 && sale < regular;
+    final stock = int.tryParse(_stock.text.trim()) ?? 0;
+    final desc = _description.text.trim();
+    return {
+      'name': _name.text.trim(),
+      if (desc.isNotEmpty) 'description': desc,
+      'price': hasSale ? sale : regular,
+      if (hasSale) 'originalPrice': regular,
+      'stock': stock,
+      'isActive': finalStatus == ProductStatus.active,
+    };
+  }
+
+  Future<void> _save({ProductStatus? overrideStatus}) async {
+    if (_saving) return;
     if (!_formKey.currentState!.validate()) return;
     final finalStatus = overrideStatus ?? _status;
-    final message = _isEdit
-        ? 'Product updated (mock)'
-        : finalStatus == ProductStatus.active
-        ? 'Product published (mock)'
-        : 'Product saved as draft (mock)';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
-      ),
-    );
-    context.pop();
+    setState(() => _saving = true);
+    try {
+      final payload = _buildPayload(finalStatus);
+      if (_isEdit) {
+        await ref
+            .read(akhiyanApiProvider)
+            .products
+            .update(widget.productId!, payload);
+      } else {
+        await ref.read(akhiyanApiProvider).products.create(payload);
+      }
+      ref.invalidate(productsListProvider);
+      ref.invalidate(inventoryListProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isEdit
+              ? 'Product updated'
+              : finalStatus == ProductStatus.active
+                  ? 'Product published'
+                  : 'Product saved as draft'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_describeError(e)),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _doDelete() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(akhiyanApiProvider).products.delete(widget.productId!);
+      ref.invalidate(productsListProvider);
+      ref.invalidate(inventoryListProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Product deleted')),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_describeError(e)),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   void _confirmDelete() {
@@ -101,10 +205,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              context.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Product deleted (mock)')),
-              );
+              _doDelete();
             },
             child: const Text(
               'Delete',
@@ -125,7 +226,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         elevation: 0,
         scrolledUnderElevation: 1,
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: _saving ? null : () => context.pop(),
           icon: const Icon(Icons.close, color: AppColors.onSurface),
         ),
         title: Text(
@@ -135,49 +236,87 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.md,
+        actions: [
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
           ),
-          children: [
-            const _ImagesSection(),
-            const SizedBox(height: AppSpacing.lg),
-            _BasicInfoSection(
-              name: _name,
-              description: _description,
-              brand: _brand,
-              category: _category,
-              onCategoryChanged: (c) => setState(() => _category = c),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _PricingSection(price: _price, salePrice: _salePrice),
-            const SizedBox(height: AppSpacing.md),
-            _StockSection(stock: _stock, sku: _sku),
-            const SizedBox(height: AppSpacing.md),
-            const _VariantsSection(),
-            if (_isEdit) ...[
-              const SizedBox(height: AppSpacing.md),
-              _StatusSection(
-                status: _status,
-                onChanged: (s) => setState(() => _status = s),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.md),
-            _SeoSection(
-              metaTitle: _metaTitle,
-              metaDescription: _metaDescription,
-            ),
-          ],
-        ),
+        ],
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.cloud_off,
+                            size: 48, color: AppColors.error),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(_describeError(_loadError!),
+                            textAlign: TextAlign.center),
+                        const SizedBox(height: AppSpacing.md),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _loadError = null;
+                              _loading = true;
+                            });
+                            _loadExisting();
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
+                    children: [
+                      const _ImagesSection(),
+                      const SizedBox(height: AppSpacing.lg),
+                      _BasicInfoSection(
+                        name: _name,
+                        description: _description,
+                        brand: _brand,
+                        category: _category,
+                        onCategoryChanged: (c) =>
+                            setState(() => _category = c),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _PricingSection(price: _price, salePrice: _salePrice),
+                      const SizedBox(height: AppSpacing.md),
+                      _StockSection(stock: _stock, sku: _sku),
+                      const SizedBox(height: AppSpacing.md),
+                      const _VariantsSection(),
+                      if (_isEdit) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        _StatusSection(
+                          status: _status,
+                          onChanged: (s) => setState(() => _status = s),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.md),
+                      _SeoSection(
+                        metaTitle: _metaTitle,
+                        metaDescription: _metaDescription,
+                      ),
+                    ],
+                  ),
+                ),
       bottomNavigationBar: _ActionBar(
         isEdit: _isEdit,
+        saving: _saving,
         onSaveDraft: () => _save(overrideStatus: ProductStatus.draft),
         onPublish: () => _save(overrideStatus: ProductStatus.active),
         onSave: _save,
@@ -187,10 +326,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   }
 }
 
+String _describeError(Object e) {
+  if (e is api.ApiException) return e.message;
+  if (e is api.NetworkException) return 'No internet connection';
+  return 'Could not save product';
+}
+
 // ─── Shared form helpers ─────────────────────────────────────────────────
 
-/// Field label rendered above each input — matches the mockup's
-/// `label-md` slate-700 hint above each control.
 class _FieldLabel extends StatelessWidget {
   const _FieldLabel(this.text);
   final String text;
@@ -347,8 +490,6 @@ class _AddImageTile extends StatelessWidget {
   }
 }
 
-/// Dashed-border box drawn via [CustomPaint]. Flutter has no built-in
-/// dashed border, so we paint it manually around the child.
 class DottedBorderBox extends StatelessWidget {
   const DottedBorderBox({required this.child, super.key});
   final Widget child;
@@ -378,7 +519,8 @@ class _DottedBorderPainter extends CustomPainter {
     canvas.drawPath(dashed, paint);
   }
 
-  Path _dashedPath(Path source, {required double dashLength, required double gapLength}) {
+  Path _dashedPath(Path source,
+      {required double dashLength, required double gapLength}) {
     final dest = Path();
     for (final metric in source.computeMetrics()) {
       var distance = 0.0;
@@ -398,11 +540,6 @@ class _DottedBorderPainter extends CustomPainter {
   bool shouldRepaint(_DottedBorderPainter oldDelegate) => false;
 }
 
-/// Placeholder image tile for an "uploaded" image. Has an X delete badge
-/// overlaid in the top-right corner. The `filled` variant shows a solid
-/// gray placeholder; the other shows a subtler tone (stand-in for a still-
-/// uploading image — without the spinner overlay since we have no async
-/// work to drive it from in this mock form).
 class _ExistingImageTile extends StatelessWidget {
   const _ExistingImageTile({required this.filled});
   final bool filled;
@@ -674,8 +811,6 @@ class _VariantsSection extends StatefulWidget {
 }
 
 class _VariantsSectionState extends State<_VariantsSection> {
-  // Mock single variant entry — backed by local list since the Product
-  // domain doesn't model variants yet.
   final _variants = <({String size, String color})>[
     (size: 'US 10', color: 'Red'),
   ];
@@ -883,6 +1018,7 @@ class _SeoSection extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.isEdit,
+    required this.saving,
     required this.onSaveDraft,
     required this.onPublish,
     required this.onSave,
@@ -890,6 +1026,7 @@ class _ActionBar extends StatelessWidget {
   });
 
   final bool isEdit;
+  final bool saving;
   final VoidCallback onSaveDraft;
   final VoidCallback onPublish;
   final VoidCallback onSave;
@@ -911,11 +1048,10 @@ class _ActionBar extends StatelessWidget {
             Expanded(
               flex: 1,
               child: OutlinedButton(
-                onPressed: isEdit ? onDelete : onSaveDraft,
+                onPressed: saving ? null : (isEdit ? onDelete : onSaveDraft),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isEdit
-                      ? AppColors.error
-                      : AppColors.onSurface,
+                  foregroundColor:
+                      isEdit ? AppColors.error : AppColors.onSurface,
                   side: BorderSide(
                     color: isEdit ? AppColors.error : AppColors.borderSubtle,
                   ),
@@ -940,7 +1076,7 @@ class _ActionBar extends StatelessWidget {
             Expanded(
               flex: 2,
               child: ElevatedButton(
-                onPressed: isEdit ? onSave : onPublish,
+                onPressed: saving ? null : (isEdit ? onSave : onPublish),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onPrimary,
@@ -951,16 +1087,26 @@ class _ActionBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.large),
                   ),
                 ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    isEdit ? 'Save Changes' : 'Publish Product',
-                    style: AppTypography.bodySm.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
+                child: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(
+                              AppColors.onPrimary),
+                        ),
+                      )
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          isEdit ? 'Save Changes' : 'Publish Product',
+                          style: AppTypography.bodySm.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
               ),
             ),
           ],

@@ -9,7 +9,9 @@ import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_shell_app_bar.dart';
+import '../../../core/widgets/page_loading_overlay.dart';
 import '../../../core/widgets/pagination_bar.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../domain/product.dart';
 
 enum _ProductFilter { all, active, draft, lowStock, outOfStock }
@@ -26,6 +28,16 @@ class ProductsScreen extends ConsumerStatefulWidget {
 class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   _ProductFilter _filter = _ProductFilter.all;
   String _query = '';
+
+  /// Page number the user just tapped that is currently being fetched.
+  /// Drives the inline spinner inside the [PaginationBar] and the centered
+  /// "Loading page X..." overlay. Cleared once `state.loading` flips false.
+  int? _loadingPage;
+
+  void _goToPage(int p) {
+    setState(() => _loadingPage = p);
+    ref.read(productsListProvider.notifier).goToPage(p);
+  }
 
   bool _matchesFilter(api.Product p) {
     final state = stockStateOf(p);
@@ -46,6 +58,15 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productsListProvider);
+    // Clear the tap-tracked target once the fetch resolves so the bar's
+    // inline spinner stops.
+    if (!state.loading && _loadingPage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !ref.read(productsListProvider).loading) {
+          setState(() => _loadingPage = null);
+        }
+      });
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FC),
       appBar: const AppShellAppBar(),
@@ -145,7 +166,20 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             child: Builder(
               builder: (_) {
                 if (state.loading && state.items.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                    ),
+                    children: [
+                      for (int i = 0; i < 8; i++) ...const [
+                        _ProductCardSkeleton(),
+                        SizedBox(height: AppSpacing.sm),
+                      ],
+                    ],
+                  );
                 }
                 if (state.error != null && state.items.isEmpty) {
                   return _ErrorView(
@@ -173,7 +207,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     ),
                   );
                 }
-                return RefreshIndicator(
+                final isPageSwitching =
+                    state.loading && state.items.isNotEmpty;
+                final list = RefreshIndicator(
                   onRefresh: () =>
                       ref.read(productsListProvider.notifier).refresh(),
                   child: ListView(
@@ -184,13 +220,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       AppSpacing.lg,
                     ),
                     children: [
-                      // Top progress strip while switching pages (items still
-                      // visible underneath so the screen doesn't blank out).
-                      if (state.loading)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: LinearProgressIndicator(minHeight: 2),
-                        ),
                       for (var i = 0; i < visible.length; i++) ...[
                         _ProductCard(
                           product: visible[i],
@@ -203,12 +232,29 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       PaginationBar(
                         currentPage: state.currentPage,
                         totalPages: state.totalPages,
-                        onPageChanged: (p) => ref
-                            .read(productsListProvider.notifier)
-                            .goToPage(p),
+                        loadingPage: isPageSwitching ? _loadingPage : null,
+                        onPageChanged: _goToPage,
                       ),
                     ],
                   ),
+                );
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    IgnorePointer(
+                      ignoring: isPageSwitching,
+                      child: AnimatedOpacity(
+                        opacity: isPageSwitching ? 0.6 : 1.0,
+                        duration: const Duration(milliseconds: 120),
+                        child: list,
+                      ),
+                    ),
+                    if (isPageSwitching)
+                      PageLoadingOverlay(
+                        targetPage:
+                            _loadingPage ?? state.currentPage,
+                      ),
+                  ],
                 );
               },
             ),
@@ -320,6 +366,37 @@ class _ErrorView extends StatelessWidget {
             ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Product card skeleton (first-load placeholder) ──────────────────────
+
+class _ProductCardSkeleton extends StatelessWidget {
+  const _ProductCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppCard(
+      padding: EdgeInsets.all(AppSpacing.sm),
+      child: Row(
+        children: [
+          SkeletonBox(width: 64, height: 64, radius: AppRadius.medium),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonText(width: 180, fontSize: 14),
+                SizedBox(height: 8),
+                SkeletonText(width: 120, fontSize: 13),
+                SizedBox(height: 8),
+                SkeletonBox(width: 60, height: 16, radius: AppRadius.small),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

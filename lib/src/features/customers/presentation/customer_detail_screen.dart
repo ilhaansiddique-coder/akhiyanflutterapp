@@ -21,6 +21,11 @@ class CustomerDetailScreen extends StatelessWidget {
         title: Text('Customer $customerId'),
         actions: [
           IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
+          ),
         ],
       ),
       body: ListView(

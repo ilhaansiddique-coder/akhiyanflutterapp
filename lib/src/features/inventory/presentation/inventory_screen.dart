@@ -7,66 +7,122 @@ import '../../../core/api/api_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/coming_soon.dart';
+import '../../../core/widgets/page_loading_overlay.dart';
+import '../../../core/widgets/pagination_bar.dart';
+import '../../../core/widgets/skeleton.dart';
 
-class InventoryScreen extends ConsumerWidget {
+/// Inventory list — derived from the products endpoint via
+/// [inventoryListProvider]. Numbered pagination matches the products /
+/// orders / customers screens.
+class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final asyncInv = ref.watch(inventoryListProvider);
+  ConsumerState<InventoryScreen> createState() => _InventoryScreenState();
+}
+
+class _InventoryScreenState extends ConsumerState<InventoryScreen> {
+  /// Page number the user just tapped that is currently being fetched.
+  /// Drives the inline pagination-button spinner and the overlay label.
+  int? _loadingPage;
+
+  void _goToPage(int p) {
+    setState(() => _loadingPage = p);
+    ref.read(inventoryListProvider.notifier).goToPage(p);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(inventoryListProvider);
+    if (!state.loading && _loadingPage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !ref.read(inventoryListProvider).loading) {
+          setState(() => _loadingPage = null);
+        }
+      });
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+            icon: const Icon(Icons.menu),
+          ),
         ),
         title: const Text('Inventory'),
         actions: [
           IconButton(
-            onPressed: () => ref.invalidate(inventoryListProvider),
+            onPressed: () =>
+                ref.read(inventoryListProvider.notifier).refresh(),
             icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
           ),
         ],
       ),
-      body: asyncInv.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => (e is api.ApiException && e.isNotFound)
-            ? comingSoonBody('Inventory')
-            : Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      body: Builder(
+        builder: (_) {
+          // First-page loading: skeleton placeholders so the layout doesn't
+          // jump when items arrive.
+          if (state.loading && state.items.isEmpty) {
+            return ListView(
+              padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                const Icon(Icons.cloud_off,
-                    size: 48, color: AppColors.error),
-                const SizedBox(height: AppSpacing.md),
-                Text(_describeError(e), textAlign: TextAlign.center),
-                const SizedBox(height: AppSpacing.md),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(inventoryListProvider),
-                  child: const Text('Retry'),
-                ),
+                for (int i = 0; i < 8; i++) ...const [
+                  _InventoryRowSkeleton(),
+                  SizedBox(height: AppSpacing.sm),
+                ],
               ],
-            ),
-          ),
-        ),
-        data: (result) {
-          final items = result.data;
-          final lowStock =
-              items.where((p) => p.level == 'low').length;
-          final outOfStock =
-              items.where((p) => p.level == 'critical').length;
+            );
+          }
+          // Error on first load: keep the existing 404 -> coming-soon branch
+          // for safety even though /products shouldn't 404.
+          if (state.error != null && state.items.isEmpty) {
+            final e = state.error!;
+            if (e is api.ApiException && e.isNotFound) {
+              return comingSoonBody('Inventory');
+            }
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off,
+                        size: 48, color: AppColors.error),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(_describeError(e), textAlign: TextAlign.center),
+                    const SizedBox(height: AppSpacing.md),
+                    ElevatedButton(
+                      onPressed: () =>
+                          ref.read(inventoryListProvider.notifier).refresh(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final items = state.items;
+          // TODO: per-page totals; replace with /inventory/summary when backend exposes it.
+          final lowStock = items.where((p) => p.level == 'low').length;
+          final outOfStock = items.where((p) => p.level == 'critical').length;
           final healthy = items
               .where((p) => p.level == 'ok' || p.level == 'unlimited')
               .length;
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(inventoryListProvider);
-              await ref.read(inventoryListProvider.future);
-            },
+
+          final isPageSwitching = state.loading && state.items.isNotEmpty;
+          final list = RefreshIndicator(
+            onRefresh: () =>
+                ref.read(inventoryListProvider.notifier).refresh(),
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
@@ -117,8 +173,31 @@ class InventoryScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                PaginationBar(
+                  currentPage: state.currentPage,
+                  totalPages: state.totalPages,
+                  loadingPage: isPageSwitching ? _loadingPage : null,
+                  onPageChanged: _goToPage,
+                ),
               ],
             ),
+          );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              IgnorePointer(
+                ignoring: isPageSwitching,
+                child: AnimatedOpacity(
+                  opacity: isPageSwitching ? 0.6 : 1.0,
+                  duration: const Duration(milliseconds: 120),
+                  child: list,
+                ),
+              ),
+              if (isPageSwitching)
+                PageLoadingOverlay(
+                  targetPage: _loadingPage ?? state.currentPage,
+                ),
+            ],
           );
         },
       ),
@@ -249,11 +328,49 @@ class _InventoryRow extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           IconButton(
-            onPressed: () {},
+            onPressed: () => context.push('/products/${item.id}'),
             icon: const Icon(Icons.edit_outlined, size: 18),
             color: AppColors.primary,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Inventory row skeleton (first-load placeholder) ────────────────────
+
+class _InventoryRowSkeleton extends StatelessWidget {
+  const _InventoryRowSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(AppSpacing.sm),
+        child: Row(
+          children: [
+            SkeletonBox(width: 56, height: 56, radius: AppRadius.medium),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SkeletonText(width: 180, fontSize: 14),
+                  SizedBox(height: 6),
+                  SkeletonText(width: 100, fontSize: 13),
+                ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.md),
+            SkeletonText(width: 50, fontSize: 14),
+          ],
+        ),
       ),
     );
   }

@@ -76,9 +76,12 @@ class SyncClient extends Notifier<SyncState> {
     _close(keepWatchdog: false);
 
     final url = '${ApiConfig.baseUrl}/sync/stream';
+    // Only `Accept` here — adding `Cache-Control` would push the request out
+    // of the CORS "simple" set on web, triggering a preflight that the
+    // backend's allowed-headers list rejects. Browsers don't cache
+    // `text/event-stream` anyway, so the header buys us nothing.
     final req = http.Request('GET', Uri.parse(url))
-      ..headers['Accept'] = 'text/event-stream'
-      ..headers['Cache-Control'] = 'no-cache';
+      ..headers['Accept'] = 'text/event-stream';
 
     // Authenticate the SSE connection — withAdmin is on the Next.js stream
     // route via getSessionUser(), which reads either the cookie OR the

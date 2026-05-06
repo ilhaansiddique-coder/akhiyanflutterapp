@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/app_drawer.dart';
 
 class CourierScreen extends StatelessWidget {
   const CourierScreen({super.key});
@@ -12,12 +13,22 @@ class CourierScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+            icon: const Icon(Icons.menu),
+          ),
         ),
         title: const Text('Courier Management'),
+        actions: [
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/app_drawer.dart';
 
 /// Coupons / Marketing manager — port of the latest design spec
 /// (`coupons_manager.html`). Layout: header row (title + subtitle + CTA),
@@ -29,13 +30,16 @@ class _CouponsScreenState extends State<CouponsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FC),
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: AppColors.surfaceContainerLowest,
         elevation: 0,
         scrolledUnderElevation: 1,
-        leading: IconButton(
-          onPressed: () => context.canPop() ? context.pop() : null,
-          icon: const Icon(Icons.menu, color: AppColors.primary),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+            icon: const Icon(Icons.menu, color: AppColors.primary),
+          ),
         ),
         title: Text(
           'Akhiyan Admin',
@@ -68,6 +72,11 @@ class _CouponsScreenState extends State<CouponsScreen> {
                 ),
               ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
           ),
         ],
       ),

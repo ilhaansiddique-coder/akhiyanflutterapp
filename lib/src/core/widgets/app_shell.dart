@@ -5,10 +5,16 @@ import 'package:go_router/go_router.dart';
 import '../../features/orders/application/orders_providers.dart';
 import '../router/app_router.dart';
 import '../theme/colors.dart';
+import 'app_drawer.dart';
 
-/// Shell for the 5 main tabs — wraps the active route with a Material 3
-/// [NavigationBar] at the bottom. Mirrors the bottom nav from
-/// `dashboard_1/code.html`.
+/// Global key for the shell's Scaffold so the hamburger button on the inner
+/// feature screens' `AppShellAppBar` can open the OUTER (shell) drawer —
+/// `Scaffold.of(context)` from inside a feature screen would otherwise resolve
+/// to the inner Scaffold which has no drawer attached.
+final appShellScaffoldKey = GlobalKey<ScaffoldState>();
+
+/// Shell for the main tabs — wraps the active route with a Material 3
+/// [NavigationBar] at the bottom and a left-side [AppDrawer].
 class AppShell extends ConsumerWidget {
   const AppShell({required this.child, super.key});
 
@@ -23,7 +29,6 @@ class AppShell extends ConsumerWidget {
         Icons.inventory_2, 'Products'),
     _NavDest(AppRoute.marketing, Icons.campaign_outlined,
         Icons.campaign, 'Marketing'),
-    _NavDest(AppRoute.more, Icons.more_horiz, Icons.more_horiz, 'More'),
   ];
 
   int _indexFor(BuildContext context) {
@@ -50,6 +55,8 @@ class AppShell extends ConsumerWidget {
     }
 
     return Scaffold(
+      key: appShellScaffoldKey,
+      drawer: const AppDrawer(),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: selected,

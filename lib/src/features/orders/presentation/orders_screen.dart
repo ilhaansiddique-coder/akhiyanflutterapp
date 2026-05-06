@@ -10,7 +10,9 @@ import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_shell_app_bar.dart';
 import '../../../core/widgets/order_status_badge.dart';
+import '../../../core/widgets/page_loading_overlay.dart';
 import '../../../core/widgets/pagination_bar.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../domain/order.dart';
 
 /// Orders list — wired to the live `/orders` endpoint via [ordersListProvider].
@@ -25,9 +27,24 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   OrderStatus? _filter;
   String _query = '';
 
+  /// Page number the user just tapped that is currently being fetched.
+  int? _loadingPage;
+
+  void _goToPage(int p) {
+    setState(() => _loadingPage = p);
+    ref.read(ordersListProvider.notifier).goToPage(p);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ordersListProvider);
+    if (!state.loading && _loadingPage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !ref.read(ordersListProvider).loading) {
+          setState(() => _loadingPage = null);
+        }
+      });
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FC),
       appBar: const AppShellAppBar(),
@@ -130,7 +147,20 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             child: Builder(
               builder: (_) {
                 if (state.loading && state.items.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                    ),
+                    children: [
+                      for (int i = 0; i < 8; i++) ...const [
+                        _OrderCardSkeleton(),
+                        SizedBox(height: AppSpacing.md),
+                      ],
+                    ],
+                  );
                 }
                 if (state.error != null && state.items.isEmpty) {
                   return _ErrorView(
@@ -161,7 +191,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     ),
                   );
                 }
-                return RefreshIndicator(
+                final isPageSwitching =
+                    state.loading && state.items.isNotEmpty;
+                final list = RefreshIndicator(
                   onRefresh: () =>
                       ref.read(ordersListProvider.notifier).refresh(),
                   child: ListView(
@@ -172,11 +204,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       AppSpacing.lg,
                     ),
                     children: [
-                      if (state.loading)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: LinearProgressIndicator(minHeight: 2),
-                        ),
                       for (var i = 0; i < visible.length; i++) ...[
                         _OrderCard(
                           order: visible[i],
@@ -190,12 +217,28 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       PaginationBar(
                         currentPage: state.currentPage,
                         totalPages: state.totalPages,
-                        onPageChanged: (p) => ref
-                            .read(ordersListProvider.notifier)
-                            .goToPage(p),
+                        loadingPage: isPageSwitching ? _loadingPage : null,
+                        onPageChanged: _goToPage,
                       ),
                     ],
                   ),
+                );
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    IgnorePointer(
+                      ignoring: isPageSwitching,
+                      child: AnimatedOpacity(
+                        opacity: isPageSwitching ? 0.6 : 1.0,
+                        duration: const Duration(milliseconds: 120),
+                        child: list,
+                      ),
+                    ),
+                    if (isPageSwitching)
+                      PageLoadingOverlay(
+                        targetPage: _loadingPage ?? state.currentPage,
+                      ),
+                  ],
                 );
               },
             ),
@@ -581,6 +624,37 @@ class _MetaCol extends StatelessWidget {
         const SizedBox(height: 2),
         child,
       ],
+    );
+  }
+}
+
+// ─── Order card skeleton (first-load placeholder) ───────────────────────
+
+class _OrderCardSkeleton extends StatelessWidget {
+  const _OrderCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppCard(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          SkeletonBox(width: 40, height: 40, radius: 20),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonText(width: 160, fontSize: 14),
+                SizedBox(height: 6),
+                SkeletonText(width: 120, fontSize: 13),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.md),
+          SkeletonText(width: 60, fontSize: 14),
+        ],
+      ),
     );
   }
 }

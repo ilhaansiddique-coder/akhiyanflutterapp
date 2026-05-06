@@ -46,6 +46,11 @@ class _CouponFormScreenState extends State<CouponFormScreen> {
             },
             child: const Text('Create'),
           ),
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
+          ),
         ],
       ),
       body: ListView(

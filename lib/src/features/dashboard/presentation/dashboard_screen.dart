@@ -87,12 +87,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             96,
           ),
           children: [
-            _Greeting(name: firstName),
-            const SizedBox(height: AppSpacing.md),
-            _DateRangePill(
-              range: _range,
-              firstDate: _firstDate,
-              onTap: _pickRange,
+            // Wrap so the pill drops below the greeting on narrow widths
+            // instead of overflowing. On wide screens both sit in one row.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.start,
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.sm,
+              children: [
+                _Greeting(name: firstName),
+                _DateRangePill(
+                  range: _range,
+                  firstDate: _firstDate,
+                  onTap: _pickRange,
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.lg),
             // Error state — only shows on outright failure.

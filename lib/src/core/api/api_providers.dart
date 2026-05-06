@@ -36,11 +36,18 @@ final akhiyanApiProvider = Provider<AkhiyanApi>((ref) {
   return api;
 });
 
+/// Logged-in user profile fetched from `/auth/me`. Returns the full
+/// [AdminUser] (name, email, phone, role, avatar) — richer than the
+/// short `AuthSession` cached at login time.
+final currentUserProvider = FutureProvider<AdminUser>(
+  (ref) => ref.watch(akhiyanApiProvider).auth.me(),
+);
+
 /// Async dashboard data scoped to a [DateTimeRange]. Keyed by the range so
 /// switching presets on the dashboard pill re-fetches transparently. Refresh
 /// the *current* range via `ref.invalidate(dashboardDataProvider(range))`.
 final dashboardDataProvider =
-    FutureProvider.autoDispose.family<DashboardData, DateTimeRange>(
+    FutureProvider.family<DashboardData, DateTimeRange>(
   (ref, range) => ref.watch(akhiyanApiProvider).dashboard.fetch(
         from: range.start,
         to: range.end,
@@ -61,6 +68,7 @@ class PagedListState<T> {
   final int totalPages;
   final int total;
   final bool loading;
+  final bool refreshing;
   final Object? error;
 
   const PagedListState({
@@ -69,6 +77,7 @@ class PagedListState<T> {
     this.totalPages = 0,
     this.total = 0,
     this.loading = false,
+    this.refreshing = false,
     this.error,
   });
 
@@ -78,6 +87,7 @@ class PagedListState<T> {
     int? totalPages,
     int? total,
     bool? loading,
+    bool? refreshing,
     Object? error,
     bool clearError = false,
   }) {
@@ -87,6 +97,7 @@ class PagedListState<T> {
       totalPages: totalPages ?? this.totalPages,
       total: total ?? this.total,
       loading: loading ?? this.loading,
+      refreshing: refreshing ?? this.refreshing,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -99,8 +110,23 @@ class PagedListState<T> {
 /// The visible items are replaced on every page change — there is no
 /// accumulation. The screen renders a numbered pagination bar at the bottom
 /// and calls [goToPage] when the user taps a number / arrow.
+///
+/// Caching: every page that has been fetched is stored in [_pageCache] so
+/// that flipping back to a previously-viewed page is instant (no spinner,
+/// no network). The cache is cleared on [refresh]. After each successful
+/// fetch we also fire-and-forget a prefetch for `page + 1` to make Next
+/// feel instant.
 abstract class SinglePageNotifier<T> extends Notifier<PagedListState<T>> {
   bool _disposed = false;
+
+  /// Per-page result cache. Lives outside the immutable state so the state
+  /// class stays small and we don't pay copy costs every navigation.
+  final Map<int, List<T>> _pageCache = {};
+
+  /// Pages currently being prefetched in the background. Prevents duplicate
+  /// prefetch requests if the user navigates again before the prefetch
+  /// resolves.
+  final Set<int> _prefetching = {};
 
   Future<PaginatedResponse<T>> fetchPage(int page, int pageSize);
 
@@ -110,36 +136,96 @@ abstract class SinglePageNotifier<T> extends Notifier<PagedListState<T>> {
     // Kick off page 1 on first watch (matches the old behaviour where the
     // screen got data on first render).
     Future.microtask(() => goToPage(1));
-    return const PagedListState(loading: true);
+    // Explicit <T>: a `const PagedListState(loading: true)` would be
+    // inferred as `PagedListState<Never>`, which makes `copyWith` reject
+    // the typed item lists we set on first fetch.
+    return PagedListState<T>(loading: true);
   }
 
   /// Fetch [page] (1-based) and replace the visible items. Surfaces errors via
   /// [PagedListState.error]; existing items are preserved on failure so the UI
   /// can keep rendering the previous page while showing an error toast/inline.
+  ///
+  /// Cache behaviour:
+  ///   - If [page] is in [_pageCache]: swap items immediately (zero spinner)
+  ///     and skip the network call entirely. This is the hot path that makes
+  ///     flipping back and forth instant.
+  ///   - Otherwise: keep the previous items visible, set `loading = true`,
+  ///     and fetch.
+  ///
+  /// On success we also kick off a background prefetch for `page + 1`.
   Future<void> goToPage(int page) async {
     if (page < 1) page = 1;
     final prev = state;
+
+    // Cached page → instant swap, no network, no spinner.
+    final cached = _pageCache[page];
+    if (cached != null) {
+      state = prev.copyWith(
+        items: cached,
+        currentPage: page,
+        loading: false,
+        refreshing: false,
+        clearError: true,
+      );
+      _maybePrefetch(page + 1);
+      return;
+    }
+
+    // Not cached → keep previous items visible, show loading.
     state = prev.copyWith(loading: true, clearError: true);
     try {
       final res = await fetchPage(page, kListPageSize);
       if (_disposed) return;
+      _pageCache[res.pagination.page] = res.data;
       state = PagedListState<T>(
         items: res.data,
         currentPage: res.pagination.page,
         totalPages: res.pagination.totalPages,
         total: res.pagination.total,
         loading: false,
+        refreshing: false,
       );
+      _maybePrefetch(res.pagination.page + 1);
     } catch (e) {
       if (_disposed) return;
       // Keep previously-loaded items so the UI doesn't blank out on a flaky
       // navigation; surface the error so the screen can decide what to show.
-      state = prev.copyWith(loading: false, error: e);
+      state = prev.copyWith(loading: false, refreshing: false, error: e);
     }
   }
 
-  /// Reload the current page. Used by pull-to-refresh.
-  Future<void> refresh() => goToPage(state.currentPage <= 0 ? 1 : state.currentPage);
+  /// Fire-and-forget prefetch for [page]. Skips if out of range, already
+  /// cached, or already in flight. Errors are swallowed — prefetch failures
+  /// must never surface to the user.
+  void _maybePrefetch(int page) {
+    final s = state;
+    if (page < 1) return;
+    if (s.totalPages > 0 && page > s.totalPages) return;
+    if (_pageCache.containsKey(page)) return;
+    if (_prefetching.contains(page)) return;
+    _prefetching.add(page);
+    // Intentionally not awaited.
+    () async {
+      try {
+        final res = await fetchPage(page, kListPageSize);
+        if (_disposed) return;
+        _pageCache[res.pagination.page] = res.data;
+      } catch (_) {
+        // Silent — user didn't request this page.
+      } finally {
+        _prefetching.remove(page);
+      }
+    }();
+  }
+
+  /// Reload the current page. Used by pull-to-refresh — clears the cache
+  /// entirely and refetches the current page from the network.
+  Future<void> refresh() {
+    _pageCache.clear();
+    _prefetching.clear();
+    return goToPage(state.currentPage <= 0 ? 1 : state.currentPage);
+  }
 
   Future<void> nextPage() {
     final s = state;
@@ -176,32 +262,80 @@ class _CustomersPagedNotifier extends SinglePageNotifier<CustomerListItem> {
           .list(page: page, pageSize: pageSize);
 }
 
+class _InventoryPagedNotifier extends SinglePageNotifier<InventoryItem> {
+  @override
+  Future<PaginatedResponse<InventoryItem>> fetchPage(
+      int page, int pageSize) async {
+    final res = await ref
+        .read(akhiyanApiProvider)
+        .products
+        .list(page: page, pageSize: pageSize);
+    final items = res.data.map((p) {
+      final String level;
+      if (p.unlimitedStock == true) {
+        level = 'unlimited';
+      } else if (p.stock <= 0) {
+        level = 'critical';
+      } else if (p.stock <= 5) {
+        level = 'low';
+      } else {
+        level = 'ok';
+      }
+      return InventoryItem(
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        image: p.image,
+        stock: p.stock,
+        unlimitedStock: p.unlimitedStock,
+        soldCount: p.soldCount,
+        price: p.price,
+        hasVariations: p.hasVariations,
+        level: level,
+        variants: p.variants ?? const [],
+      );
+    }).toList();
+    return PaginatedResponse<InventoryItem>(
+      data: items,
+      pagination: res.pagination,
+    );
+  }
+}
+
 /// Products list — single page at a time. The screen renders a numbered
 /// pagination bar and calls `goToPage(n)` when the user taps a page.
-final productsListProvider = NotifierProvider.autoDispose<
+final productsListProvider = NotifierProvider<
     SinglePageNotifier<Product>, PagedListState<Product>>(
   _ProductsPagedNotifier.new,
 );
 
 /// Orders list — single page at a time.
-final ordersListProvider = NotifierProvider.autoDispose<
+final ordersListProvider = NotifierProvider<
     SinglePageNotifier<OrderListItem>, PagedListState<OrderListItem>>(
   _OrdersPagedNotifier.new,
 );
 
 /// Customers list — single page at a time.
-final customersListProvider = NotifierProvider.autoDispose<
+final customersListProvider = NotifierProvider<
     SinglePageNotifier<CustomerListItem>, PagedListState<CustomerListItem>>(
   _CustomersPagedNotifier.new,
 );
 
-/// Inventory list. Invalidate to refresh.
-final inventoryListProvider =
-    FutureProvider.autoDispose<InventoryResult>(
-  (ref) => ref.watch(akhiyanApiProvider).inventory.list(pageSize: 100),
+/// Inventory list — derived from the products endpoint until the backend
+/// implements `/inventory`. Single page at a time, with numbered pagination.
+final inventoryListProvider = NotifierProvider<
+    SinglePageNotifier<InventoryItem>, PagedListState<InventoryItem>>(
+  _InventoryPagedNotifier.new,
 );
 
 /// Analytics for default 30d period. Invalidate to refresh.
-final analyticsDataProvider = FutureProvider.autoDispose<AnalyticsData>(
+///
+/// Keep-alive (no autoDispose): the analytics screen is data-heavy
+/// (~30 daily revenue points + topProducts + statusBreakdown) and users
+/// flip away from it constantly. Disposing on every screen exit forced a
+/// fresh round trip on every return; the in-memory cost is tiny and
+/// freshness is governed by `bumpVersion("orders")` / explicit pull-to-
+/// refresh anyway.
+final analyticsDataProvider = FutureProvider<AnalyticsData>(
   (ref) => ref.watch(akhiyanApiProvider).analytics.fetch(period: '30d'),
 );

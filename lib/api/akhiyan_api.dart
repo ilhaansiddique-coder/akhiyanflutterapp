@@ -206,9 +206,9 @@ class OrderListItem {
   });
 
   factory OrderListItem.fromJson(Map<String, dynamic> json) {
-    // items can come as `_count.items`, `items` array length, or itemCount.
+    // items can come as `_count.items`, `items` array length, item_count, or itemCount.
     int itemCount = 0;
-    final ic = json['itemCount'];
+    final ic = json['itemCount'] ?? json['item_count'];
     if (ic is int) {
       itemCount = ic;
     } else if (json['items'] is List) {
@@ -216,20 +216,20 @@ class OrderListItem {
     } else if (json['_count'] is Map && (json['_count'] as Map)['items'] is int) {
       itemCount = (json['_count'] as Map)['items'] as int;
     }
-    final risk = json['riskScore'] as int?;
+    final risk = (json['riskScore'] ?? json['risk_score']) as int?;
     return OrderListItem(
       id: (json['id'] ?? '').toString(),
-      customerName: (json['customerName'] ?? '') as String,
-      customerPhone: json['customerPhone'] as String?,
+      customerName: (json['customerName'] ?? json['customer_name'] ?? '') as String,
+      customerPhone: (json['customerPhone'] ?? json['customer_phone']) as String?,
       total: ((json['total'] as num?) ?? 0).toDouble(),
       status: (json['status'] as String?) ?? 'pending',
-      paymentMethod: (json['paymentMethod'] ?? 'cod') as String,
-      paymentStatus: json['paymentStatus'] as String?,
+      paymentMethod: (json['paymentMethod'] ?? json['payment_method'] ?? 'cod') as String,
+      paymentStatus: (json['paymentStatus'] ?? json['payment_status']) as String?,
       riskScore: risk,
-      courierSent: (json['courierSent'] ?? false) as bool,
+      courierSent: (json['courierSent'] ?? json['courier_sent'] ?? false) as bool,
       itemCount: itemCount,
       flagged: (json['flagged'] as bool?) ?? ((risk ?? 0) >= 70),
-      createdAt: _parseDate(json['createdAt']),
+      createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
     );
   }
 }
@@ -976,11 +976,11 @@ class TopProductSummary {
 
   factory TopProductSummary.fromJson(Map<String, dynamic> json) => TopProductSummary(
         id: (json['id'] ?? '').toString(),
-        name: json['name'] as String,
-        slug: json['slug'] as String,
-        image: json['image'] as String,
-        soldCount: json['soldCount'] as int? ?? 0,
-        price: (json['price'] as num).toDouble(),
+        name: (json['name'] as String?) ?? '',
+        slug: (json['slug'] as String?) ?? '',
+        image: (json['image'] as String?) ?? '',
+        soldCount: ((json['soldCount'] ?? json['sold_count']) as int?) ?? 0,
+        price: ((json['price'] as num?) ?? 0).toDouble(),
       );
 }
 
@@ -998,20 +998,42 @@ class DashboardData {
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
-    final stats = (json['stats'] as Map<String, dynamic>?) ?? json['cards'] as Map<String, dynamic>? ?? {};
+    // Backend currently returns snake_case keys (today_orders, recent_orders,
+    // etc.) — accept both shapes until the backend migrates to camelCase.
+    final stats = (json['stats'] as Map<String, dynamic>?) ??
+        (json['cards'] as Map<String, dynamic>?) ??
+        const <String, dynamic>{};
     final cards = DashboardCards(
-      todayOrders: StatCard(value: (stats['todayOrders'] ?? 0) as num),
-      todayRevenue: StatCard(value: (stats['todayRevenue'] ?? 0) as num),
-      pendingOrders: StatCard(value: (stats['pendingOrders'] ?? 0) as num),
-      lowStockItems: StatCard(value: (stats['lowStockItems'] ?? 0) as num),
+      todayOrders: StatCard(
+        value: (stats['todayOrders'] ?? stats['today_orders'] ?? 0) as num,
+      ),
+      todayRevenue: StatCard(
+        value: (stats['todayRevenue'] ?? stats['today_revenue'] ?? 0) as num,
+      ),
+      pendingOrders: StatCard(
+        value: (stats['pendingOrders'] ?? stats['pending_orders'] ?? 0) as num,
+      ),
+      lowStockItems: StatCard(
+        value: (stats['lowStockItems'] ??
+                stats['low_stock_items'] ??
+                stats['low_stock'] ??
+                0) as num,
+      ),
     );
-    final recent = (json['recentOrders'] ?? []) as List;
-    final top = (json['topProducts'] ?? []) as List;
+    final recent = (json['recentOrders'] ?? json['recent_orders'] ?? const [])
+        as List;
+    final top = (json['topProducts'] ?? json['top_products'] ?? const []) as List;
     return DashboardData(
       cards: cards,
-      flaggedOrdersCount: (json['flaggedOrdersCount'] ?? 0) as int,
-      recentOrders: recent.map((e) => OrderListItem.fromJson(e as Map<String, dynamic>)).toList(),
-      topProducts: top.map((e) => TopProductSummary.fromJson(e as Map<String, dynamic>)).toList(),
+      flaggedOrdersCount: (json['flaggedOrdersCount'] ??
+          json['flagged_orders_count'] ??
+          0) as int,
+      recentOrders: recent
+          .map((e) => OrderListItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      topProducts: top
+          .map((e) => TopProductSummary.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

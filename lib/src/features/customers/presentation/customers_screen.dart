@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/akhiyan_api.dart' as api;
 import '../../../core/api/api_providers.dart';
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/coming_soon.dart';
+import '../../../core/widgets/page_loading_overlay.dart';
 import '../../../core/widgets/pagination_bar.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 
@@ -22,6 +25,14 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
 
+  /// Page number the user just tapped that is currently being fetched.
+  int? _loadingPage;
+
+  void _goToPage(int p) {
+    setState(() => _loadingPage = p);
+    ref.read(customersListProvider.notifier).goToPage(p);
+  }
+
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -31,15 +42,25 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(customersListProvider);
+    if (!state.loading && _loadingPage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !ref.read(customersListProvider).loading) {
+          setState(() => _loadingPage = null);
+        }
+      });
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FC),
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: AppColors.surfaceContainerLowest,
         elevation: 0,
         scrolledUnderElevation: 1,
-        leading: IconButton(
-          onPressed: () => context.canPop() ? context.pop() : null,
-          icon: const Icon(Icons.menu, color: AppColors.primary),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+            icon: const Icon(Icons.menu, color: AppColors.primary),
+          ),
         ),
         title: Text(
           'Akhiyan Admin',
@@ -70,6 +91,11 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               ),
             ),
           ),
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -82,7 +108,20 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
       body: Builder(
         builder: (_) {
           if (state.loading && state.items.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.xl + AppSpacing.lg,
+              ),
+              children: [
+                for (int i = 0; i < 8; i++) ...const [
+                  _CustomerCardSkeleton(),
+                  SizedBox(height: AppSpacing.sm),
+                ],
+              ],
+            );
           }
           if (state.error != null && state.items.isEmpty) {
             final e = state.error!;
@@ -117,7 +156,8 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             return c.name.toLowerCase().contains(q) ||
                 (c.email ?? '').toLowerCase().contains(q);
           }).toList();
-          return RefreshIndicator(
+          final isPageSwitching = state.loading && state.items.isNotEmpty;
+          final list = RefreshIndicator(
             onRefresh: () =>
                 ref.read(customersListProvider.notifier).refresh(),
             child: ListView(
@@ -229,11 +269,6 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                if (state.loading)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: LinearProgressIndicator(minHeight: 2),
-                  ),
                 if (visible.isEmpty && state.items.isNotEmpty)
                   Padding(
                     padding:
@@ -271,12 +306,28 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 PaginationBar(
                   currentPage: state.currentPage,
                   totalPages: state.totalPages,
-                  onPageChanged: (p) => ref
-                      .read(customersListProvider.notifier)
-                      .goToPage(p),
+                  loadingPage: isPageSwitching ? _loadingPage : null,
+                  onPageChanged: _goToPage,
                 ),
               ],
             ),
+          );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              IgnorePointer(
+                ignoring: isPageSwitching,
+                child: AnimatedOpacity(
+                  opacity: isPageSwitching ? 0.6 : 1.0,
+                  duration: const Duration(milliseconds: 120),
+                  child: list,
+                ),
+              ),
+              if (isPageSwitching)
+                PageLoadingOverlay(
+                  targetPage: _loadingPage ?? state.currentPage,
+                ),
+            ],
           );
         },
       ),
@@ -465,6 +516,43 @@ class _MetaCol extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Customer card skeleton (first-load placeholder) ────────────────────
+
+class _CustomerCardSkeleton extends StatelessWidget {
+  const _CustomerCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF1F7),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.circular(AppRadius.large),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SkeletonBox(width: 48, height: 48, radius: 24),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SkeletonText(width: 160, fontSize: 14),
+                  SizedBox(height: 6),
+                  SkeletonText(width: 200, fontSize: 13),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

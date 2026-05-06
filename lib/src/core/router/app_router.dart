@@ -6,7 +6,6 @@ import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/marketing/presentation/marketing_screen.dart';
-import '../../features/more/presentation/more_screen.dart';
 import '../../features/analytics/presentation/analytics_screen.dart';
 import '../../features/coupons/presentation/coupon_form_screen.dart';
 import '../../features/coupons/presentation/coupons_screen.dart';
@@ -32,8 +31,7 @@ enum AppRoute {
   dashboard('/dashboard'),
   orders('/orders'),
   products('/products'),
-  marketing('/marketing'),
-  more('/more');
+  marketing('/marketing');
 
   const AppRoute(this.path);
   final String path;
@@ -170,11 +168,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoute.marketing.path,
             pageBuilder: (_, _) =>
                 const NoTransitionPage(child: MarketingScreen()),
-          ),
-          GoRoute(
-            path: AppRoute.more.path,
-            pageBuilder: (_, _) =>
-                const NoTransitionPage(child: MoreScreen()),
           ),
         ],
       ),

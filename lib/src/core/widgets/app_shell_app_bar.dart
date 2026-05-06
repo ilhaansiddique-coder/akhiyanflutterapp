@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../theme/colors.dart';
 import '../theme/typography.dart';
+import 'app_shell.dart';
 
 /// AppBar shared by every top-level tab in the bottom-nav shell.
 ///
@@ -27,7 +28,9 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       scrolledUnderElevation: 1,
       leading: IconButton(
-        onPressed: () {},
+        // Use the shell's Scaffold key — feature screens have their own inner
+        // Scaffold, so `Scaffold.of(context)` here would miss the outer drawer.
+        onPressed: () => appShellScaffoldKey.currentState?.openDrawer(),
         icon: const Icon(Icons.menu, color: AppColors.primary),
       ),
       title: Text(
@@ -43,6 +46,14 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
           onPressed: () => context.push('/notifications'),
           icon: const Icon(
             Icons.notifications_outlined,
+            color: AppColors.primary,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Home',
+          onPressed: () => context.go('/dashboard'),
+          icon: const Icon(
+            Icons.home_outlined,
             color: AppColors.primary,
           ),
         ),

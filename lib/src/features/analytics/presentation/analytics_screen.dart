@@ -7,6 +7,7 @@ import '../../../core/api/api_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/coming_soon.dart';
 import '../../../core/widgets/stat_card.dart';
 
@@ -18,16 +19,24 @@ class AnalyticsScreen extends ConsumerWidget {
     final asyncAnalytics = ref.watch(analyticsDataProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+            icon: const Icon(Icons.menu),
+          ),
         ),
         title: const Text('Analytics'),
         actions: [
           IconButton(
             onPressed: () => ref.invalidate(analyticsDataProvider),
             icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(Icons.home_outlined, color: AppColors.primary),
           ),
         ],
       ),

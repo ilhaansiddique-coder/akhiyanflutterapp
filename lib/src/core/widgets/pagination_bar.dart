@@ -19,11 +19,18 @@ class PaginationBar extends StatelessWidget {
     required this.currentPage,
     required this.totalPages,
     required this.onPageChanged,
+    this.loadingPage,
   });
 
   final int currentPage;
   final int totalPages;
   final ValueChanged<int> onPageChanged;
+
+  /// Page number the user just tapped that is currently being fetched.
+  /// When non-null, that button shows a tiny spinner instead of its number,
+  /// giving immediate feedback exactly where the tap landed. Cleared by the
+  /// caller (typically when `state.loading` flips false).
+  final int? loadingPage;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +59,7 @@ class PaginationBar extends StatelessWidget {
               _PageButton(
                 page: entry,
                 active: entry == currentPage,
+                loading: entry == loadingPage,
                 onTap: () => onPageChanged(entry),
               ),
             const SizedBox(width: AppSpacing.xs),
@@ -133,15 +141,18 @@ class _PageButton extends StatelessWidget {
   const _PageButton({
     required this.page,
     required this.active,
+    required this.loading,
     required this.onTap,
   });
 
   final int page;
   final bool active;
+  final bool loading;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final fg = active ? AppColors.onPrimary : AppColors.onSurface;
     return Material(
       color: active ? AppColors.primary : AppColors.surfaceContainerLowest,
       shape: RoundedRectangleBorder(
@@ -151,20 +162,29 @@ class _PageButton extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: active ? null : onTap,
+        onTap: (active || loading) ? null : onTap,
         borderRadius: BorderRadius.circular(AppRadius.medium),
         child: SizedBox(
           width: 36,
           height: 36,
           child: Center(
-            child: Text(
-              '$page',
-              style: AppTypography.bodySm.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                color: active ? AppColors.onPrimary : AppColors.onSurface,
-              ),
-            ),
+            child: loading
+                ? SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(fg),
+                    ),
+                  )
+                : Text(
+                    '$page',
+                    style: AppTypography.bodySm.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: fg,
+                    ),
+                  ),
           ),
         ),
       ),
