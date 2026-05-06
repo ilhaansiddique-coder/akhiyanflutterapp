@@ -8,6 +8,7 @@ import '../../../core/api/api_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/sync/sync_client.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_shell_app_bar.dart';
 import '../../../core/widgets/date_range_picker_dialog.dart';
@@ -58,6 +59,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final session = ref.watch(authControllerProvider);
     final firstName = session?.userName.split(' ').first ?? 'there';
 
+    // Self-refresh on relevant SSE bumps. The global syncInvalidationProvider
+    // also invalidates this family, but watching the channel version directly
+    // here is belt-and-suspenders: even if a future refactor forgets to wire
+    // the dashboard into the global invalidator, the dashboard still reacts
+    // because it owns its own subscription.
+    //
+    // ref.listen with previous != next guards against infinite loops; the
+    // initial fire is the snapshot, not a real bump.
+    ref.listen<int>(syncVersionProvider('orders'), (prev, next) {
+      if (prev != null && next > prev) {
+        ref.invalidate(dashboardDataProvider(_range));
+      }
+    });
+    ref.listen<int>(syncVersionProvider('products'), (prev, next) {
+      if (prev != null && next > prev) {
+        ref.invalidate(dashboardDataProvider(_range));
+      }
+    });
+
     final asyncData = ref.watch(dashboardDataProvider(_range));
     final data = asyncData.value;
     final isLoading = asyncData.isLoading;
@@ -87,15 +107,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             96,
           ),
           children: [
-            // Wrap so the pill drops below the greeting on narrow widths
-            // instead of overflowing. On wide screens both sit in one row.
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.start,
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.sm,
+            // Pill MUST stay top-right of the greeting at every width — do
+            // not switch this back to a Wrap or stack vertically on narrow
+            // screens. The greeting uses Expanded so its long text and date
+            // line wrap inside the available space, and the pill keeps its
+            // natural width on the right.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Greeting(name: firstName),
+                Expanded(child: _Greeting(name: firstName)),
+                const SizedBox(width: AppSpacing.sm),
                 _DateRangePill(
                   range: _range,
                   firstDate: _firstDate,
