@@ -8,7 +8,6 @@ import '../../../core/api/api_providers.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
-import '../../../core/sync/sync_client.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_shell_app_bar.dart';
 import '../../../core/widgets/date_range_picker_dialog.dart';
@@ -36,9 +35,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void initState() {
     super.initState();
     // Default to today; the user can switch to other presets from the pill.
+    // IMPORTANT: emit a real 24h window, not a zero-width range. Sending
+    // `start == end` to /dashboard makes the backend treat the slice as 0
+    // seconds wide, which historically returned 500 instead of empty stats.
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    _range = DateTimeRange(start: today, end: today);
+    final start = DateTime(now.year, now.month, now.day);
+    final end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    _range = DateTimeRange(start: start, end: end);
   }
 
   Future<void> _pickRange() async {
@@ -58,25 +61,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final ref = this.ref;
     final session = ref.watch(authControllerProvider);
     final firstName = session?.userName.split(' ').first ?? 'there';
-
-    // Self-refresh on relevant SSE bumps. The global syncInvalidationProvider
-    // also invalidates this family, but watching the channel version directly
-    // here is belt-and-suspenders: even if a future refactor forgets to wire
-    // the dashboard into the global invalidator, the dashboard still reacts
-    // because it owns its own subscription.
-    //
-    // ref.listen with previous != next guards against infinite loops; the
-    // initial fire is the snapshot, not a real bump.
-    ref.listen<int>(syncVersionProvider('orders'), (prev, next) {
-      if (prev != null && next > prev) {
-        ref.invalidate(dashboardDataProvider(_range));
-      }
-    });
-    ref.listen<int>(syncVersionProvider('products'), (prev, next) {
-      if (prev != null && next > prev) {
-        ref.invalidate(dashboardDataProvider(_range));
-      }
-    });
 
     final asyncData = ref.watch(dashboardDataProvider(_range));
     final data = asyncData.value;

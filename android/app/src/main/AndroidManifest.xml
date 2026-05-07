@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for all network calls (REST + SSE). The debug manifest also
+         declares this for hot-reload tooling, but release builds need it
+         here or every HTTP request fails silently. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="Akhiyan Admin"
         android:name="${applicationName}"

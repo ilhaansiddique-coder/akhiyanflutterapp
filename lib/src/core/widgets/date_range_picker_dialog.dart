@@ -533,7 +533,22 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
         const SizedBox(width: AppSpacing.sm),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(
-            DateTimeRange(start: _start, end: _end),
+            // Expand `end` to end-of-day so a single-day selection ("Today",
+            // "Yesterday", or two taps on the same date) is a real 24h window
+            // instead of a zero-width range. Backend filters with `lte: end`,
+            // so this lets it include the whole final day.
+            DateTimeRange(
+              start: _start,
+              end: DateTime(
+                _end.year,
+                _end.month,
+                _end.day,
+                23,
+                59,
+                59,
+                999,
+              ),
+            ),
           ),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,

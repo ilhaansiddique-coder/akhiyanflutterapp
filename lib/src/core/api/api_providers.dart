@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,6 +41,27 @@ final akhiyanApiProvider = Provider<AkhiyanApi>((ref) {
 /// short `AuthSession` cached at login time.
 final currentUserProvider = FutureProvider<AdminUser>(
   (ref) => ref.watch(akhiyanApiProvider).auth.me(),
+);
+
+/// All active product categories. Cached for the app's lifetime — categories
+/// rarely change, and the product form needs them on every open. Invalidate
+/// after creating a new category to force a refetch.
+final categoriesProvider = FutureProvider<List<Category>>(
+  (ref) => ref.watch(akhiyanApiProvider).categories.list(),
+);
+
+/// All active brands. Same caching strategy as [categoriesProvider].
+final brandsProvider = FutureProvider<List<Brand>>(
+  (ref) => ref.watch(akhiyanApiProvider).brands.list(),
+);
+
+/// Single order with full details (items, courier, payment, customer
+/// address). Keyed by order id so two open detail screens don't share state.
+/// Auto-disposed: detail data is only relevant while the screen is mounted —
+/// freeing it on pop keeps the cache from bloating across navigation.
+final orderDetailProvider =
+    FutureProvider.family.autoDispose<Order, String>(
+  (ref, orderId) => ref.watch(akhiyanApiProvider).orders.detail(orderId),
 );
 
 /// Async dashboard data scoped to a [DateTimeRange]. Keyed by the range so

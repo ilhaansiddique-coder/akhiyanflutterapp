@@ -28,6 +28,10 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   /// Page number the user just tapped that is currently being fetched.
   int? _loadingPage;
 
+  /// 0 = Customers (live data), 1 = Staff (placeholder mock until the
+  /// backend exposes a staff/admin endpoint).
+  int _tab = 0;
+
   void _goToPage(int p) {
     setState(() => _loadingPage = p);
     ref.read(customersListProvider.notifier).goToPage(p);
@@ -103,10 +107,19 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         elevation: 4,
-        child: const Icon(Icons.person_add, size: 26),
+        child: Icon(_tab == 0 ? Icons.person_add : Icons.group_add, size: 26),
       ),
       body: Builder(
         builder: (_) {
+          if (_tab == 1) {
+            return _StaffListView(
+              searchCtrl: _searchCtrl,
+              query: _query,
+              onQueryChanged: (v) => setState(() => _query = v),
+              tabIndex: _tab,
+              onTabChanged: (i) => setState(() => _tab = i),
+            );
+          }
           if (state.loading && state.items.isEmpty) {
             return ListView(
               padding: const EdgeInsets.fromLTRB(
@@ -220,13 +233,18 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.md),
+                _UsersTabBar(
+                  selected: _tab,
+                  onChanged: (i) => setState(() => _tab = i),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      'Customers',
+                      'Users',
                       style: AppTypography.h1.copyWith(
                         fontSize: 24,
                         height: 1.1,
@@ -553,6 +571,256 @@ class _CustomerCardSkeleton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Users tab bar ─────────────────────────────────────────────────────────
+
+/// Two-segment toggle: Customers / Staff. Sits between the search field and
+/// the page title. Selected pill carries the brand primary; the inactive
+/// segment is a muted surface tint so the contrast pair is unambiguous.
+class _UsersTabBar extends StatelessWidget {
+  const _UsersTabBar({required this.selected, required this.onChanged});
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          _segment('Customers', 0),
+          _segment('Staff', 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _segment(String label, int index) {
+    final active = selected == index;
+    return Expanded(
+      child: Material(
+        color: active ? AppColors.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.medium),
+        child: InkWell(
+          onTap: () => onChanged(index),
+          borderRadius: BorderRadius.circular(AppRadius.medium),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Center(
+              child: Text(
+                label,
+                style: AppTypography.bodySm.copyWith(
+                  color: active ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Staff tab body ────────────────────────────────────────────────────────
+
+/// Placeholder staff/admin list. Hardcoded mock until the backend exposes
+/// `/api/v1/m/staff` (or similar) with role + presence. The shape mirrors
+/// the live customers tab so when the API arrives we just swap the source.
+class _StaffListView extends StatelessWidget {
+  const _StaffListView({
+    required this.searchCtrl,
+    required this.query,
+    required this.onQueryChanged,
+    required this.tabIndex,
+    required this.onTabChanged,
+  });
+
+  final TextEditingController searchCtrl;
+  final String query;
+  final ValueChanged<String> onQueryChanged;
+  final int tabIndex;
+  final ValueChanged<int> onTabChanged;
+
+  static const _staff = <(String, String, String, Color)>[
+    ('Stitch Henderson', 'Super Admin', 'Online', AppColors.success),
+    ('Shuvro Khan', 'Order Manager', 'Online', AppColors.success),
+    ('Rifat Hasan', 'Inventory Lead', 'Away', AppColors.warning),
+    ('Mehedi Talukder', 'Customer Support', 'Offline', AppColors.outline),
+    ('Sara Ahmed', 'Marketing', 'Offline', AppColors.outline),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final q = query.toLowerCase();
+    final visible = q.isEmpty
+        ? _staff
+        : _staff
+            .where((s) =>
+                s.$1.toLowerCase().contains(q) ||
+                s.$2.toLowerCase().contains(q))
+            .toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.xl + AppSpacing.lg,
+      ),
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(AppRadius.large),
+          ),
+          child: TextField(
+            controller: searchCtrl,
+            onChanged: onQueryChanged,
+            decoration: InputDecoration(
+              hintText: 'Search staff...',
+              prefixIcon: const Icon(Icons.search,
+                  color: AppColors.outline, size: 20),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 14,
+              ),
+              filled: true,
+              fillColor: AppColors.surfaceContainerLowest,
+              hintStyle: AppTypography.bodyMd
+                  .copyWith(color: AppColors.outline),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.large),
+                borderSide: const BorderSide(color: AppColors.borderSubtle),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.large),
+                borderSide: const BorderSide(color: AppColors.borderSubtle),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.large),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _UsersTabBar(selected: tabIndex, onChanged: onTabChanged),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Users',
+          style: AppTypography.h1.copyWith(
+            fontSize: 24,
+            height: 1.1,
+            fontWeight: FontWeight.w800,
+            color: AppColors.onBackground,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (visible.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            child: Center(
+              child: Text(
+                query.isEmpty
+                    ? 'No staff yet'
+                    : 'No staff match "$query"',
+                style: AppTypography.bodyMd
+                    .copyWith(color: AppColors.onSurfaceVariant),
+              ),
+            ),
+          )
+        else
+          for (final s in visible)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(AppRadius.large),
+                  border: Border.all(color: AppColors.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppColors.primaryContainer,
+                          child: Text(
+                            s.$1.substring(0, 1),
+                            style: AppTypography.bodyMd.copyWith(
+                              color: AppColors.primaryFixed,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: s.$4,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.surfaceContainerLowest,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.$1,
+                            style: AppTypography.bodyMd
+                                .copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          Text(
+                            s.$2,
+                            style: AppTypography.bodySm.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      s.$3,
+                      style: AppTypography.caption.copyWith(
+                        color: s.$4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Icons.more_vert),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      ],
     );
   }
 }

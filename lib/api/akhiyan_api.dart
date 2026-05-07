@@ -496,6 +496,68 @@ class ProductVariant {
   }
 }
 
+class Category {
+  final String id;
+  final String name;
+  final String slug;
+  final String? image;
+  final String? description;
+  final int sortOrder;
+  final bool isActive;
+  final int productsCount;
+
+  Category({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.image,
+    this.description,
+    this.sortOrder = 0,
+    this.isActive = true,
+    this.productsCount = 0,
+  });
+
+  factory Category.fromJson(Map<String, dynamic> json) => Category(
+        id: (json['id'] ?? '').toString(),
+        name: (json['name'] as String?) ?? '',
+        slug: (json['slug'] as String?) ?? '',
+        image: json['image'] as String?,
+        description: json['description'] as String?,
+        sortOrder: (json['sortOrder'] ?? json['sort_order'] ?? 0) as int,
+        isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
+        productsCount:
+            (json['productsCount'] ?? json['products_count'] ?? 0) as int,
+      );
+}
+
+class Brand {
+  final String id;
+  final String name;
+  final String slug;
+  final String? logo;
+  final bool isActive;
+  final int productsCount;
+
+  Brand({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.logo,
+    this.isActive = true,
+    this.productsCount = 0,
+  });
+
+  factory Brand.fromJson(Map<String, dynamic> json) => Brand(
+        id: (json['id'] ?? '').toString(),
+        name: (json['name'] as String?) ?? '',
+        slug: (json['slug'] as String?) ?? '',
+        logo: json['logo'] as String?,
+        isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
+        productsCount:
+            (json['productsCount'] ?? json['products_count'] ?? 0) as int,
+      );
+}
+
 class CustomerListItem {
   final String id;
   final String name;
@@ -1173,6 +1235,8 @@ class AkhiyanApi {
   late final DashboardApi dashboard;
   late final OrdersApi orders;
   late final ProductsApi products;
+  late final CategoriesApi categories;
+  late final BrandsApi brands;
   late final CustomersApi customers;
   late final InventoryApi inventory;
   late final CouponsApi coupons;
@@ -1194,6 +1258,8 @@ class AkhiyanApi {
     dashboard = DashboardApi(this);
     orders = OrdersApi(this);
     products = ProductsApi(this);
+    categories = CategoriesApi(this);
+    brands = BrandsApi(this);
     customers = CustomersApi(this);
     inventory = InventoryApi(this);
     coupons = CouponsApi(this);
@@ -1214,14 +1280,25 @@ class AkhiyanApi {
   /// Internal: low-level request with auto-refresh on 401. Returns the parsed
   /// `data` field of the `{ data, pagination?, ... }` envelope, or the raw
   /// JSON map if there's no `data` key (rare).
+  /// Sibling base for endpoints that live outside the `/m` mobile namespace
+  /// (e.g. the public `/api/v1/categories` and `/api/v1/brands` lookups
+  /// reused by the product form). Strips a trailing `/m` if present;
+  /// otherwise returns [baseUrl] unchanged.
+  String get _rootBaseUrl {
+    if (baseUrl.endsWith('/m')) return baseUrl.substring(0, baseUrl.length - 2);
+    return baseUrl;
+  }
+
   Future<dynamic> request(
     String method,
     String path, {
     Map<String, dynamic>? body,
     Map<String, String>? query,
     bool retried = false,
+    bool rootBase = false,
   }) async {
-    final uri = Uri.parse('$baseUrl$path').replace(
+    final base = rootBase ? _rootBaseUrl : baseUrl;
+    final uri = Uri.parse('$base$path').replace(
       queryParameters: query == null || query.isEmpty ? null : query,
     );
 
@@ -1481,6 +1558,39 @@ class ProductsApi {
     return res['data'] as Map<String, dynamic>;
   }
 
+}
+
+// =============================================================================
+// Categories — read-only via the public `/categories` endpoint (sibling of
+// the mobile namespace). Backend filters to active items, sorted by sortOrder.
+// =============================================================================
+
+class CategoriesApi {
+  final AkhiyanApi _api;
+  CategoriesApi(this._api);
+
+  Future<List<Category>> list() async {
+    final res = await _api.request('GET', '/categories', rootBase: true);
+    return (res['data'] as List)
+        .map((e) => Category.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+}
+
+// =============================================================================
+// Brands — read-only, same shape as Categories.
+// =============================================================================
+
+class BrandsApi {
+  final AkhiyanApi _api;
+  BrandsApi(this._api);
+
+  Future<List<Brand>> list() async {
+    final res = await _api.request('GET', '/brands', rootBase: true);
+    return (res['data'] as List)
+        .map((e) => Brand.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 // =============================================================================

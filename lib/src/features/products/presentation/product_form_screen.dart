@@ -27,14 +27,16 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _description;
-  late final TextEditingController _brand;
   late final TextEditingController _price;
   late final TextEditingController _salePrice;
   late final TextEditingController _stock;
   late final TextEditingController _sku;
   late final TextEditingController _metaTitle;
   late final TextEditingController _metaDescription;
-  String _category = 'Footwear';
+  // Selected category / brand IDs. Null until the user picks one or the
+  // product is loaded from the backend in edit mode.
+  String? _categoryId;
+  String? _brandId;
   ProductStatus _status = ProductStatus.draft;
 
   bool _loading = false;
@@ -48,7 +50,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     super.initState();
     _name = TextEditingController();
     _description = TextEditingController();
-    _brand = TextEditingController();
     _price = TextEditingController();
     _salePrice = TextEditingController();
     _stock = TextEditingController();
@@ -81,6 +82,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       }
       setState(() {
         _status = p.isActive ? ProductStatus.active : ProductStatus.draft;
+        _categoryId = p.categoryId;
+        _brandId = p.brandId;
         _loading = false;
       });
     } catch (e) {
@@ -96,7 +99,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   void dispose() {
     _name.dispose();
     _description.dispose();
-    _brand.dispose();
     _price.dispose();
     _salePrice.dispose();
     _stock.dispose();
@@ -288,10 +290,12 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       _BasicInfoSection(
                         name: _name,
                         description: _description,
-                        brand: _brand,
-                        category: _category,
-                        onCategoryChanged: (c) =>
-                            setState(() => _category = c),
+                        categoryId: _categoryId,
+                        brandId: _brandId,
+                        onCategoryChanged: (id) =>
+                            setState(() => _categoryId = id),
+                        onBrandChanged: (id) =>
+                            setState(() => _brandId = id),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       _PricingSection(price: _price, salePrice: _salePrice),
@@ -592,25 +596,33 @@ class _ExistingImageTile extends StatelessWidget {
 
 // ─── Basic Information section ───────────────────────────────────────────
 
-class _BasicInfoSection extends StatelessWidget {
+/// Basic info card. Categories + brands are now fetched live from the
+/// backend via [categoriesProvider] / [brandsProvider]; the previous
+/// hardcoded `['Footwear', 'Apparel', 'Accessories']` list is gone. While
+/// the lookup data is loading, both dropdowns render as disabled stubs so
+/// the layout doesn't jump when the response arrives.
+class _BasicInfoSection extends ConsumerWidget {
   const _BasicInfoSection({
     required this.name,
     required this.description,
-    required this.brand,
-    required this.category,
+    required this.categoryId,
+    required this.brandId,
     required this.onCategoryChanged,
+    required this.onBrandChanged,
   });
 
   final TextEditingController name;
   final TextEditingController description;
-  final TextEditingController brand;
-  final String category;
-  final ValueChanged<String> onCategoryChanged;
-
-  static const _categories = ['Footwear', 'Apparel', 'Accessories'];
+  final String? categoryId;
+  final String? brandId;
+  final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<String?> onBrandChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categories = ref.watch(categoriesProvider);
+    final brands = ref.watch(brandsProvider);
+
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -645,17 +657,15 @@ class _BasicInfoSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const _FieldLabel('Category'),
-                    DropdownButtonFormField<String>(
-                      initialValue: category,
-                      isExpanded: true,
-                      decoration: _inputDecoration(),
-                      items: [
-                        for (final c in _categories)
-                          DropdownMenuItem(value: c, child: Text(c)),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) onCategoryChanged(v);
-                      },
+                    _LookupDropdown(
+                      value: categoryId,
+                      hint: 'Select category',
+                      itemsAsync: categories.whenData(
+                        (list) => [
+                          for (final c in list) (id: c.id, label: c.name),
+                        ],
+                      ),
+                      onChanged: onCategoryChanged,
                     ),
                   ],
                 ),
@@ -666,9 +676,15 @@ class _BasicInfoSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const _FieldLabel('Brand'),
-                    TextFormField(
-                      controller: brand,
-                      decoration: _inputDecoration(hint: 'Brand name'),
+                    _LookupDropdown(
+                      value: brandId,
+                      hint: 'Select brand',
+                      itemsAsync: brands.whenData(
+                        (list) => [
+                          for (final b in list) (id: b.id, label: b.name),
+                        ],
+                      ),
+                      onChanged: onBrandChanged,
                     ),
                   ],
                 ),
@@ -677,6 +693,60 @@ class _BasicInfoSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Shared dropdown that renders an async list of `(id, label)` pairs. Shows
+/// a disabled placeholder while loading and an error label on failure so
+/// the user understands why the dropdown isn't populated.
+class _LookupDropdown extends StatelessWidget {
+  const _LookupDropdown({
+    required this.value,
+    required this.hint,
+    required this.itemsAsync,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final String hint;
+  final AsyncValue<List<({String id, String label})>> itemsAsync;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return itemsAsync.when(
+      loading: () => DropdownButtonFormField<String>(
+        initialValue: null,
+        isExpanded: true,
+        decoration: _inputDecoration(hint: 'Loading...'),
+        items: const [],
+        onChanged: null,
+      ),
+      error: (_, _) => DropdownButtonFormField<String>(
+        initialValue: null,
+        isExpanded: true,
+        decoration: _inputDecoration(hint: 'Failed to load'),
+        items: const [],
+        onChanged: null,
+      ),
+      data: (items) {
+        // If the current value isn't in the fetched list (e.g. a deleted
+        // category referenced by an old product), fall back to null so the
+        // dropdown doesn't throw.
+        final safeValue =
+            items.any((e) => e.id == value) ? value : null;
+        return DropdownButtonFormField<String>(
+          initialValue: safeValue,
+          isExpanded: true,
+          decoration: _inputDecoration(hint: hint),
+          items: [
+            for (final item in items)
+              DropdownMenuItem(value: item.id, child: Text(item.label)),
+          ],
+          onChanged: onChanged,
+        );
+      },
     );
   }
 }

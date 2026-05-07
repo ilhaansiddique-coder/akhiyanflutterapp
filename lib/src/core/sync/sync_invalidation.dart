@@ -52,7 +52,16 @@ class _SyncInvalidator {
       final last = _seen[channel] ?? 0;
       if (version <= last) return;
       _seen[channel] = version;
-      _refreshForChannel(channel, version);
+      // Defer to a microtask: ref.listen callbacks fire synchronously while
+      // the source notifier is still publishing. If multiple channels bump
+      // back-to-back (initial SSE snapshot), invalidating providers inline
+      // rebuilds dependants like syncVersionProvider twice in the same frame
+      // — Riverpod 3 throws "Tried to rebuild Provider<int> multiple times
+      // in the same frame". Microtask breaks the chain.
+      Future.microtask(() {
+        if (_disposed) return;
+        _refreshForChannel(channel, version);
+      });
     });
   }
 

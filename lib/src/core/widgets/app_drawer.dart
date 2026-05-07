@@ -22,8 +22,7 @@ class AppDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authControllerProvider);
     final items = <(IconData, String, String)>[
-      (Icons.inventory, 'Inventory', '/inventory'),
-      (Icons.people_outline, 'Customers', '/customers'),
+      (Icons.people_outline, 'Users', '/customers'),
       (Icons.local_shipping_outlined, 'Courier Management', '/courier'),
       (Icons.local_offer_outlined, 'Coupons', '/coupons'),
       (Icons.bolt_outlined, 'Flash Sales', '/flash-sales'),
@@ -31,7 +30,6 @@ class AppDrawer extends ConsumerWidget {
       (Icons.analytics_outlined, 'Analytics', '/analytics'),
       (Icons.notifications_outlined, 'Notifications', '/notifications'),
       (Icons.security_outlined, 'Fraud & Security', '/fraud-security'),
-      (Icons.group_outlined, 'Staff Accounts', '/staff'),
     ];
 
     void go(String path) {

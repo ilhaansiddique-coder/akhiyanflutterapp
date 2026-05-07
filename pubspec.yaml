@@ -73,24 +73,29 @@ flutter_launcher_icons:
   image_path: "assets/branding/akhiyan_mark.png"
   min_sdk_android: 21
   remove_alpha_ios: true
-  background_color_ios: "#004020"
-  adaptive_icon_background: "#004020"
+  # Brand orange — matches AppColors.primary so the icon background is
+  # consistent with the in-app theme.
+  background_color_ios: "#FF5733"
+  adaptive_icon_background: "#FF5733"
   adaptive_icon_foreground: "assets/branding/akhiyan_mark.png"
 
 # Native splash screen configuration. Run with:
 #   dart run flutter_native_splash:create
+# Both light and dark modes use the brand orange so the splash blends into
+# the app instead of flashing the old emerald palette.
 flutter_native_splash:
-  color: "#F7FAF4"
+  color: "#FF5733"
   image: "assets/branding/akhiyan_logo.png"
-  color_dark: "#004020"
+  color_dark: "#FF5733"
   image_dark: "assets/branding/akhiyan_logo.png"
   android_12:
-    color: "#F7FAF4"
+    color: "#FF5733"
     image: "assets/branding/akhiyan_mark.png"
-    color_dark: "#004020"
+    color_dark: "#FF5733"
     image_dark: "assets/branding/akhiyan_mark.png"
   android: true
   ios: true
+  web: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
