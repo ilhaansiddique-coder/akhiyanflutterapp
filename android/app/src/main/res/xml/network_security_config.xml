@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allow plain HTTP only for the Coolify sslip.io host (no TLS yet) and
+  localhost-style addresses used during development. Everything else
+  enforces HTTPS — Android's default is to block all cleartext, which is
+  what we want once the production domain has a real cert.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">168.144.126.233.sslip.io</domain>
+        <domain includeSubdomains="true">sslip.io</domain>
+        <domain>localhost</domain>
+        <domain>10.0.2.2</domain>
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">192.168.1.0</domain>
+    </domain-config>
+</network-security-config>

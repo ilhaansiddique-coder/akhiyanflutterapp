@@ -68,5 +68,21 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- Allow plain HTTP only for the Coolify sslip.io host. iOS App
+		     Transport Security blocks all cleartext by default. Remove this
+		     entire block once the production domain has a real TLS cert. -->
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSExceptionDomains</key>
+			<dict>
+				<key>168.144.126.233.sslip.io</key>
+				<dict>
+					<key>NSIncludesSubdomains</key>
+					<true/>
+					<key>NSExceptionAllowsInsecureHTTPLoads</key>
+					<true/>
+				</dict>
+			</dict>
+		</dict>
 	</dict>
 </plist>

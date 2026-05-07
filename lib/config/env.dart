@@ -18,17 +18,20 @@
 ///   # Physical phone on same Wi-Fi (replace IP with your PC's LAN address)
 ///   flutter run --dart-define=API_URL=http://192.168.1.100:3000/api/v1/m
 ///
-///   # Production
+///   # Production (Coolify on Digital Ocean — current default)
+///   flutter build apk --dart-define=API_URL=http://l10yo20jq5mhrg8b8nmp68cr.168.144.126.233.sslip.io/api/v1/m
+///
+///   # Production (custom domain — when DNS is wired)
 ///   flutter build apk --dart-define=API_URL=https://akhiyanbd.com/api/v1/m
-///   flutter build ios --dart-define=API_URL=https://akhiyanbd.com/api/v1/m
 library;
 
 class Env {
-  /// API base URL from build-time environment variable.
-  /// Defaults to localhost for web/desktop development.
+  /// API base URL from build-time environment variable. Default points at
+  /// the Coolify-hosted backend on Digital Ocean. Override with --dart-define
+  /// to target localhost for dev, an emulator host, or a different domain.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:3000/api/v1/m',
+    defaultValue: 'http://l10yo20jq5mhrg8b8nmp68cr.168.144.126.233.sslip.io/api/v1/m',
   );
 
   /// Optional tenant slug for the future SaaS migration. Sent as
