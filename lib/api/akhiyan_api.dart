@@ -28,6 +28,8 @@
 
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 
 // =============================================================================
@@ -39,7 +41,14 @@ class ApiException implements Exception {
   final String message;
   final Map<String, dynamic>? details;
 
-  ApiException(this.statusCode, this.message, [this.details]);
+  /// Raw decoded body of the error response. Kept around for cases like
+  /// 422 from Zod-style backends where `details` is structurally
+  /// nested ({ items: { _errors: [...] }, ... }) and the flattened
+  /// `details` map can't represent it. UIs that want a verbatim dump
+  /// (developer-facing error dialogs) can read this directly.
+  final Map<String, dynamic>? raw;
+
+  ApiException(this.statusCode, this.message, [this.details, this.raw]);
 
   bool get isUnauthorized => statusCode == 401;
   bool get isForbidden => statusCode == 403;
@@ -232,6 +241,29 @@ class OrderListItem {
       createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
     );
   }
+}
+
+/// Filter option for the orders list. Keys are stable backend slugs
+/// (e.g. `pending`, `shipped`); labels are human-friendly. Optional
+/// hex `color` lets the backend customize chip / badge tint per
+/// status without a Flutter release.
+class OrderStatusOption {
+  const OrderStatusOption({
+    required this.key,
+    required this.label,
+    this.color,
+  });
+
+  final String key;
+  final String label;
+  final String? color;
+
+  factory OrderStatusOption.fromJson(Map<String, dynamic> json) =>
+      OrderStatusOption(
+        key: (json['key'] ?? '').toString(),
+        label: (json['label'] ?? json['key'] ?? '').toString(),
+        color: json['color'] as String?,
+      );
 }
 
 class OrderItem {
@@ -1246,6 +1278,7 @@ class AkhiyanApi {
   late final BannersApi banners;
   late final FraudApi fraud;
   late final StaffApi staff;
+  late final MediaApi media;
 
   AkhiyanApi({
     required this.baseUrl,
@@ -1269,6 +1302,7 @@ class AkhiyanApi {
     banners = BannersApi(this);
     fraud = FraudApi(this);
     staff = StaffApi(this);
+    media = MediaApi(this);
   }
 
   TokenStorage get storage => _storage;
@@ -1316,31 +1350,63 @@ class AkhiyanApi {
       headers['X-Tenant-Slug'] = tenantSlug!;
     }
 
+    // Hard ceiling per request. Without this the http package waits
+    // indefinitely on a stalled socket (Coolify cold-starts, dropped
+    // connections, etc.) and the UI shows a "Loading…" overlay that
+    // never dismisses. 30s is generous for an admin tool — anything
+    // longer is genuinely broken and the user is better off seeing an
+    // error and being able to retry.
+    const httpTimeout = Duration(seconds: 30);
+
+    // Per-request timing — prints `[api] METHOD path STATUS NNNms` so
+    // the user can see in the console exactly which calls are slow.
+    // Flag for "is this Flutter or backend?": anything >200ms here is
+    // network/backend latency, not Dart code.
+    final stopwatch = Stopwatch()..start();
+
     http.Response res;
     try {
       switch (method) {
         case 'GET':
-          res = await _http.get(uri, headers: headers);
+          res = await _http.get(uri, headers: headers).timeout(httpTimeout);
           break;
         case 'POST':
-          res = await _http.post(uri, headers: headers, body: body == null ? null : jsonEncode(body));
+          res = await _http
+              .post(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .timeout(httpTimeout);
           break;
         case 'PATCH':
-          res = await _http.patch(uri, headers: headers, body: body == null ? null : jsonEncode(body));
+          res = await _http
+              .patch(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .timeout(httpTimeout);
           break;
         case 'PUT':
-          res = await _http.put(uri, headers: headers, body: body == null ? null : jsonEncode(body));
+          res = await _http
+              .put(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .timeout(httpTimeout);
           break;
         case 'DELETE':
-          res = await _http.delete(uri, headers: headers);
+          res = await _http.delete(uri, headers: headers).timeout(httpTimeout);
           break;
         default:
           throw ArgumentError('Unsupported HTTP method: $method');
       }
+    } on TimeoutException {
+      stopwatch.stop();
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[api] $method $path TIMEOUT after ${stopwatch.elapsedMilliseconds}ms');
+      }
+      throw NetworkException('Request timed out');
     } on http.ClientException catch (e) {
       throw NetworkException(e.message);
     } catch (e) {
       throw NetworkException(e.toString());
+    }
+    stopwatch.stop();
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[api] $method $path ${res.statusCode} ${stopwatch.elapsedMilliseconds}ms');
     }
 
     // No refresh token in this backend — on 401, clear tokens and notify.
@@ -1367,6 +1433,10 @@ class AkhiyanApi {
         res.statusCode,
         message,
         json['errors'] as Map<String, dynamic>? ?? json['details'] as Map<String, dynamic>?,
+        // Pass the whole decoded body so callers can render Zod-style
+        // nested errors verbatim when the flattened `details` doesn't
+        // capture nested array indices like `items.0.productId`.
+        json,
       );
     }
 
@@ -1455,12 +1525,89 @@ class OrdersApi {
     });
     return PaginatedResponse<OrderListItem>(
       data: (res['data'] as List).map((e) => OrderListItem.fromJson(e as Map<String, dynamic>)).toList(),
-      pagination: _paginationFrom(res),
+      pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
 
   Future<Order> detail(String id) async {
     final res = await _api.request('GET', '/orders/$id');
+    return Order.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  /// Allowed order statuses for the filter chips on the orders list.
+  /// Fetched from the backend so adding a new status (e.g. `returned`,
+  /// `refunded`) on the server appears in the app without a release.
+  ///
+  /// **Backend contract** (GET /api/v1/m/orders/statuses):
+  /// ```
+  /// { "data": [
+  ///     { "key": "pending",    "label": "Pending" },
+  ///     { "key": "confirmed",  "label": "Confirmed" },
+  ///     ...
+  /// ] }
+  /// ```
+  /// Until the route ships, the Flutter side falls back to a built-in
+  /// list so the screen keeps working.
+  Future<List<OrderStatusOption>> statuses() async {
+    final res = await _api.request('GET', '/orders/statuses');
+    return (res['data'] as List)
+        .map((e) => OrderStatusOption.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Create a manual order (admin-entered, e.g. phone-in or in-store
+  /// purchase). Backend computes the canonical subtotal/total from the
+  /// items + shippingCost - discount; we send those fields too so the
+  /// route can validate the client view, but the server numbers win.
+  ///
+  /// **Backend contract** (POST /api/v1/m/orders, expected wire shape):
+  /// ```
+  /// {
+  ///   "customerName": "...",
+  ///   "customerPhone": "...",
+  ///   "customerEmail": "...?",
+  ///   "customerAddress": "...",
+  ///   "city": "...?",
+  ///   "zipCode": "...?",
+  ///   "items": [
+  ///     { "productId": "...", "variantId": "...?",
+  ///       "quantity": 1, "price": 410 }
+  ///   ],
+  ///   "shippingCost": 60,
+  ///   "discount": 0,
+  ///   "paymentMethod": "cod" | "bkash" | "nagad" | "card",
+  ///   "notes": "...?"
+  /// }
+  /// ```
+  /// Response: `{ "data": <Order> }`. Backend should also call
+  /// `bumpVersion('orders')` so the storefront and other admin clients
+  /// refresh within a second.
+  Future<Order> create({
+    required String customerName,
+    required String customerPhone,
+    String? customerEmail,
+    required String customerAddress,
+    String? city,
+    String? zipCode,
+    required List<Map<String, dynamic>> items,
+    double shippingCost = 0,
+    double discount = 0,
+    String paymentMethod = 'cod',
+    String? notes,
+  }) async {
+    final res = await _api.request('POST', '/orders', body: {
+      'customerName': customerName,
+      'customerPhone': customerPhone,
+      'customerEmail': ?customerEmail,
+      'customerAddress': customerAddress,
+      'city': ?city,
+      'zipCode': ?zipCode,
+      'items': items,
+      'shippingCost': shippingCost,
+      'discount': discount,
+      'paymentMethod': paymentMethod,
+      'notes': ?notes,
+    });
     return Order.fromJson(res['data'] as Map<String, dynamic>);
   }
 
@@ -1526,7 +1673,7 @@ class ProductsApi {
     });
     return PaginatedResponse<Product>(
       data: (res['data'] as List).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList(),
-      pagination: _paginationFrom(res),
+      pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
 
@@ -1609,7 +1756,7 @@ class CustomersApi {
     });
     return PaginatedResponse<CustomerListItem>(
       data: (res['data'] as List).map((e) => CustomerListItem.fromJson(e as Map<String, dynamic>)).toList(),
-      pagination: _paginationFrom(res),
+      pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
 
@@ -1636,7 +1783,7 @@ class InventoryApi {
     });
     return InventoryResult(
       data: (res['data'] as List).map((e) => InventoryItem.fromJson(e as Map<String, dynamic>)).toList(),
-      pagination: _paginationFrom(res),
+      pagination: _paginationFrom(res as Map<String, dynamic>),
       summary: InventorySummary.fromJson(res['summary'] as Map<String, dynamic>),
     );
   }
@@ -1845,7 +1992,7 @@ class FraudApi {
     });
     return PaginatedResponse<FlaggedOrder>(
       data: (res['data'] as List).map((e) => FlaggedOrder.fromJson(e as Map<String, dynamic>)).toList(),
-      pagination: _paginationFrom(res),
+      pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
 
@@ -1925,6 +2072,91 @@ class StaffApi {
 
   Future<void> delete(String id) async {
     await _api.request('DELETE', '/staff/$id');
+  }
+}
+
+// =============================================================================
+// Media (image uploads)
+// =============================================================================
+
+/// Image / file upload helper. POSTs `multipart/form-data` to
+/// `/uploads` and returns the hosted URL the backend assigned. Used by the
+/// product form (and any other screen that needs to attach media).
+///
+/// **Backend contract** the Flutter app expects:
+///
+///   POST /api/v1/m/uploads
+///   Content-Type: multipart/form-data
+///   field name: "file"
+///
+///   Response 200:
+///     { "data": { "url": "https://cdn.example.com/xyz.jpg" } }
+///
+/// If the route doesn't exist yet, the app surfaces a friendly error and
+/// the form keeps working — users just can't add new images. Once the
+/// backend ships the endpoint, no app changes are needed.
+class MediaApi {
+  final AkhiyanApi _api;
+  MediaApi(this._api);
+
+  /// Upload bytes from disk and return the hosted URL. Content-Type is
+  /// inferred from the filename extension server-side — Flutter's `http`
+  /// package doesn't ship `MediaType` parsing without `http_parser`, and
+  /// the backend's existing upload route already sniffs the MIME from the
+  /// uploaded extension.
+  Future<String> upload({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final uri = Uri.parse('${_api.baseUrl}/uploads');
+    final req = http.MultipartRequest('POST', uri);
+
+    final access = await _api._storage.getAccessToken();
+    if (access != null) req.headers['Authorization'] = 'Bearer $access';
+    if (_api.tenantSlug != null && _api.tenantSlug!.isNotEmpty) {
+      req.headers['X-Tenant-Slug'] = _api.tenantSlug!;
+    }
+    req.headers['Accept'] = 'application/json';
+
+    req.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: filename,
+      ),
+    );
+
+    final streamed = await req.send();
+    final body = await streamed.stream.bytesToString();
+
+    if (streamed.statusCode == 401) {
+      await _api._storage.clear();
+      _api.onAuthExpired?.call();
+      throw ApiException(401, 'Session expired');
+    }
+
+    Map<String, dynamic> json = const {};
+    if (body.isNotEmpty) {
+      try {
+        json = jsonDecode(body) as Map<String, dynamic>;
+      } catch (_) {
+        throw ApiException(streamed.statusCode, 'Server returned invalid JSON');
+      }
+    }
+
+    if (streamed.statusCode >= 400) {
+      final message = (json['message'] as String?) ??
+          (json['error'] as String?) ??
+          'Upload failed';
+      throw ApiException(streamed.statusCode, message);
+    }
+
+    final data = json['data'] as Map<String, dynamic>?;
+    final url = data?['url'] as String?;
+    if (url == null || url.isEmpty) {
+      throw ApiException(500, 'Server did not return a URL');
+    }
+    return url;
   }
 }
 

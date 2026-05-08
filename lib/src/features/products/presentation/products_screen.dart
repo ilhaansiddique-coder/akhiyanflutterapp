@@ -208,7 +208,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   );
                 }
                 final isPageSwitching =
-                    state.loading && state.items.isNotEmpty;
+                    _loadingPage != null && state.loading && state.items.isNotEmpty;
                 final list = RefreshIndicator(
                   onRefresh: () =>
                       ref.read(productsListProvider.notifier).refresh(),

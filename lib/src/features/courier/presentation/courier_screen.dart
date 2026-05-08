@@ -5,6 +5,7 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_drawer.dart';
+import '../../../core/widgets/notification_bell.dart';
 
 class CourierScreen extends StatelessWidget {
   const CourierScreen({super.key});
@@ -23,6 +24,7 @@ class CourierScreen extends StatelessWidget {
         ),
         title: const Text('Courier Management'),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Home',
             onPressed: () => context.go('/dashboard'),

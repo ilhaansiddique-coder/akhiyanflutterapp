@@ -68,6 +68,14 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- image_picker permissions. Photo library is required for picking
+		     existing product images; camera lets admins shoot photos
+		     directly from the form. The strings show up in the iOS
+		     permission prompt verbatim. -->
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Akhiyan Admin needs access to your photos so you can attach product images.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Akhiyan Admin uses the camera to capture product photos for new listings.</string>
 		<!-- Allow plain HTTP only for the Coolify sslip.io host. iOS App
 		     Transport Security blocks all cleartext by default. Remove this
 		     entire block once the production domain has a real TLS cert. -->

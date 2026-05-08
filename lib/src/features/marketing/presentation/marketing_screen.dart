@@ -298,25 +298,6 @@ class _ToolsGrid extends StatelessWidget {
       childAspectRatio: 1.25,
       children: [
         _ToolCard(
-          icon: Icons.confirmation_num_outlined,
-          iconBg: AppColors.primaryFixed,
-          iconFg: AppColors.primary,
-          title: 'Coupons',
-          description: 'Manage discounts and seasonal codes.',
-          indicator: const _CountBadge(label: '14 Active'),
-          onTap: () => context.push('/coupons'),
-        ),
-        _ToolCard(
-          icon: Icons.bolt,
-          iconBg: AppColors.successContainer,
-          iconFg: AppColors.success,
-          title: 'Flash Sales',
-          description: 'Time-limited high urgency offers.',
-          indicator: const _LiveBadge(),
-          accentColor: AppColors.success,
-          onTap: () => context.push('/flash-sales'),
-        ),
-        _ToolCard(
           icon: Icons.link,
           iconBg: AppColors.warningContainer,
           iconFg: AppColors.warning,
@@ -348,7 +329,6 @@ class _ToolCard extends StatelessWidget {
     required this.description,
     required this.indicator,
     required this.onTap,
-    this.accentColor,
   });
 
   final IconData icon;
@@ -359,13 +339,9 @@ class _ToolCard extends StatelessWidget {
   final Widget indicator;
   final VoidCallback onTap;
 
-  /// Optional vertical accent strip painted on the left edge of the card.
-  /// Used by Flash Sales to telegraph "live" without leaning on color alone.
-  final Color? accentColor;
-
   @override
   Widget build(BuildContext context) {
-    final card = AppCard(
+    return AppCard(
       onTap: onTap,
       padding: const EdgeInsets.fromLTRB(AppSpacing.md, 16, AppSpacing.md, 4),
       child: Column(
@@ -402,118 +378,6 @@ class _ToolCard extends StatelessWidget {
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-
-    if (accentColor == null) return card;
-
-    return Stack(
-      children: [
-        card,
-        Positioned(
-          left: 0,
-          top: 12,
-          bottom: 12,
-          child: Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: const BorderRadius.horizontal(
-                right: Radius.circular(2),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CountBadge extends StatelessWidget {
-  const _CountBadge({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.caption.copyWith(
-          color: AppColors.onPrimary,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _LiveBadge extends StatefulWidget {
-  const _LiveBadge();
-
-  @override
-  State<_LiveBadge> createState() => _LiveBadgeState();
-}
-
-class _LiveBadgeState extends State<_LiveBadge>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.successContainer,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedBuilder(
-            animation: _ctrl,
-            builder: (_, _) => Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(
-                  alpha: 0.5 + 0.5 * _ctrl.value,
-                ),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'LIVE NOW',
-            style: AppTypography.caption.copyWith(
-              color: AppColors.onSuccessContainer,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-            ),
           ),
         ],
       ),

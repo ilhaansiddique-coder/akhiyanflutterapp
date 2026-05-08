@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../api/akhiyan_api.dart';
-import '../../features/auth/application/auth_controller.dart';
+import '../../features/auth/domain/entities/user.dart';
+import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../api/api_providers.dart';
 import '../router/app_router.dart';
 import '../theme/colors.dart';
@@ -24,8 +25,6 @@ class AppDrawer extends ConsumerWidget {
     final items = <(IconData, String, String)>[
       (Icons.people_outline, 'Users', '/customers'),
       (Icons.local_shipping_outlined, 'Courier Management', '/courier'),
-      (Icons.local_offer_outlined, 'Coupons', '/coupons'),
-      (Icons.bolt_outlined, 'Flash Sales', '/flash-sales'),
       (Icons.link_outlined, 'Shortlinks', '/shortlinks'),
       (Icons.analytics_outlined, 'Analytics', '/analytics'),
       (Icons.notifications_outlined, 'Notifications', '/notifications'),
@@ -106,7 +105,7 @@ class AppDrawer extends ConsumerWidget {
             OutlinedButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();
-                ref.read(authControllerProvider.notifier).logout();
+                ref.read(authControllerProvider.notifier).signOut();
                 context.go(AppRoute.login.path);
               },
               icon: const Icon(Icons.logout, color: AppColors.error),
@@ -127,12 +126,12 @@ class AppDrawer extends ConsumerWidget {
 
 /// Profile card at the top of the drawer.
 ///
-/// Falls back to the cached [AuthSession] (name + role from login) immediately
+/// Falls back to the cached [User] (name + role from login) immediately
 /// for snappy first paint, then upgrades to the full [AdminUser] (with email,
 /// phone, avatar) once `/auth/me` resolves.
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({required this.session, required this.ref});
-  final AuthSession session;
+  final User session;
   final WidgetRef ref;
 
   @override
@@ -140,8 +139,8 @@ class _ProfileCard extends StatelessWidget {
     final asyncUser = ref.watch(currentUserProvider);
     final user = asyncUser.value;
 
-    final name = user?.name.isNotEmpty == true ? user!.name : session.userName;
-    final role = (user?.role ?? session.userRole).toUpperCase();
+    final name = user?.name.isNotEmpty == true ? user!.name : session.name;
+    final role = (user?.role ?? session.role).toUpperCase();
     final email = user?.email;
     final initials = _initials(name);
 

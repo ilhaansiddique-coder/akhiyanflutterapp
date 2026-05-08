@@ -9,7 +9,10 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/order_status_badge.dart';
+import '../../../core/errors/error_mapper.dart';
+import '../../../core/widgets/states/states.dart';
 import '../domain/order.dart';
 
 /// Live order detail screen. Watches [orderDetailProvider] for the given id,
@@ -55,6 +58,7 @@ class OrderDetailScreen extends ConsumerWidget {
         ),
         toolbarHeight: 72,
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Refresh',
             onPressed: () => ref.invalidate(orderDetailProvider(orderId)),
@@ -68,10 +72,11 @@ class OrderDetailScreen extends ConsumerWidget {
         ],
       ),
       body: asyncOrder.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _ErrorState(
-          error: e,
+        loading: () => const LoadingView(),
+        error: (e, _) => ErrorView(
+          message: describeError(e, fallback: 'Could not load order'),
           onRetry: () => ref.invalidate(orderDetailProvider(orderId)),
+          icon: Icons.cloud_off,
         ),
         data: (o) => RefreshIndicator(
           onRefresh: () async =>
@@ -149,39 +154,6 @@ String _shortId(String id) {
   if (id.length <= 8) return id;
   final dash = id.indexOf('-');
   return dash > 0 ? id.substring(0, dash) : id.substring(0, 8);
-}
-
-String _describeError(Object e) {
-  if (e is api.ApiException) return e.message;
-  if (e is api.NetworkException) return 'No internet connection';
-  return 'Could not load order';
-}
-
-// ─── Error state ─────────────────────────────────────────────────────────
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.error, required this.onRetry});
-  final Object error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, size: 48, color: AppColors.error),
-            const SizedBox(height: AppSpacing.md),
-            Text(_describeError(error), textAlign: TextAlign.center),
-            const SizedBox(height: AppSpacing.md),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ─── Section card shell ──────────────────────────────────────────────────
@@ -537,7 +509,7 @@ class _PaymentCardState extends ConsumerState<_PaymentCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_describeError(e)),
+          content: Text(describeError(e, fallback: 'Could not load order')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -693,7 +665,7 @@ class _CourierCardState extends ConsumerState<_CourierCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_describeError(e)),
+          content: Text(describeError(e, fallback: 'Could not load order')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -1027,7 +999,7 @@ class _DangerZoneState extends ConsumerState<_DangerZone> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_describeError(e)),
+          content: Text(describeError(e, fallback: 'Could not load order')),
           backgroundColor: AppColors.error,
         ),
       );

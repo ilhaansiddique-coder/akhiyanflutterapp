@@ -5,6 +5,7 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_drawer.dart';
+import '../../../core/widgets/notification_bell.dart';
 
 class FraudSecurityScreen extends StatelessWidget {
   const FraudSecurityScreen({super.key});
@@ -23,6 +24,7 @@ class FraudSecurityScreen extends StatelessWidget {
         ),
         title: const Text('Fraud & Security'),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Home',
             onPressed: () => context.go('/dashboard'),

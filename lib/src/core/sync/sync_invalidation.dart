@@ -97,9 +97,16 @@ class _SyncInvalidator {
         _ref.read(inventoryListProvider.notifier).refresh();
         // Dashboard "Top Products" depends on product changes too.
         _ref.invalidate(dashboardDataProvider);
+        // Variant cache used by the order form's product picker — drop the
+        // family so a re-opened variant sheet sees the updated variants
+        // (added/removed, price changed, stock changed).
+        _ref.invalidate(productDetailProvider);
         break;
       case 'customers':
         _ref.read(customersListProvider.notifier).refresh();
+        break;
+      case 'staff':
+        _ref.invalidate(staffListProvider);
         break;
       // 'reviews', 'banners', 'menus', 'flash-sales', 'settings' — no
       // listening providers wired yet; bumps recorded in the version map

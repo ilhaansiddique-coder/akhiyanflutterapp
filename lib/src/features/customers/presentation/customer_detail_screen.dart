@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
+import '../../../core/widgets/notification_bell.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
   const CustomerDetailScreen({required this.customerId, super.key});
@@ -20,6 +21,7 @@ class CustomerDetailScreen extends StatelessWidget {
         ),
         title: Text('Customer $customerId'),
         actions: [
+          const NotificationBell(),
           IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
           IconButton(
             tooltip: 'Home',

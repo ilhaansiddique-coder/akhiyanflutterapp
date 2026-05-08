@@ -11,7 +11,7 @@ import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_shell_app_bar.dart';
 import '../../../core/widgets/date_range_picker_dialog.dart';
-import '../../auth/application/auth_controller.dart';
+import '../../auth/presentation/controllers/auth_controller.dart';
 
 /// Dashboard home — bound to live data via [dashboardDataProvider].
 /// Hardcoded numbers were replaced with reactive bindings; while data is
@@ -60,7 +60,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final ref = this.ref;
     final session = ref.watch(authControllerProvider);
-    final firstName = session?.userName.split(' ').first ?? 'there';
+    final firstName = session?.name.split(' ').first ?? 'there';
 
     final asyncData = ref.watch(dashboardDataProvider(_range));
     final data = asyncData.value;
@@ -70,13 +70,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppShellAppBar(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 4,
-        child: const Icon(Icons.add, size: 28),
-      ),
+      // FAB lives on the shell now (centered + button in the bottom nav).
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(dashboardDataProvider(_range));
@@ -123,10 +117,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: AppSpacing.lg),
             ],
             _StatsGrid(cards: data?.cards),
-            const SizedBox(height: 16),
-            const _SectionHeader(title: 'Quick Actions'),
-            const SizedBox(height: AppSpacing.md),
-            const _QuickActions(),
             const SizedBox(height: 16),
             _SectionHeader(
               title: 'Recent Orders',
@@ -548,117 +538,6 @@ class _DashStat extends StatelessWidget {
   }
 }
 
-// ─── Quick Actions ────────────────────────────────────────────────────────
-
-class _QuickActions extends StatelessWidget {
-  const _QuickActions();
-
-  @override
-  Widget build(BuildContext context) {
-    final actions = [
-      (Icons.shopping_cart_outlined, 'New Order', true, () {}),
-      (
-        Icons.add_box_outlined,
-        'Add Product',
-        false,
-        () => context.push('/products/new'),
-      ),
-      (
-        Icons.confirmation_num_outlined,
-        'Create Coupon',
-        false,
-        () => context.push('/coupons/new'),
-      ),
-      (
-        Icons.bar_chart_rounded,
-        'Reports',
-        false,
-        () => context.push('/analytics'),
-      ),
-    ];
-
-    return Row(
-      children: [
-        for (final a in actions)
-          Expanded(
-            child: _QuickAction(
-              icon: a.$1,
-              label: a.$2,
-              filled: a.$3,
-              onTap: a.$4,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.filled,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final bool filled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.medium),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: filled
-                    ? AppColors.primary
-                    : AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(AppRadius.medium + 2),
-                border: filled
-                    ? null
-                    : Border.all(color: AppColors.borderSubtle),
-                boxShadow: filled
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                icon,
-                color: filled ? AppColors.onPrimary : AppColors.primary,
-                size: 22,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.caption.copyWith(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.onBackground,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ─── Section header ───────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
@@ -917,22 +796,15 @@ class _TopProducts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenW = MediaQuery.sizeOf(context).width;
-    final cardW = ((screenW - (AppSpacing.md * 2) - AppSpacing.sm - 4) / 2)
-        .clamp(140.0, 220.0);
-
     if (products == null && isLoading) {
-      return SizedBox(
-        height: 200,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: 3,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (_, _) => SizedBox(
-            width: cardW,
-            child: const _ProductCardSkeleton(),
-          ),
-        ),
+      return GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+        childAspectRatio: 0.78,
+        children: List.generate(4, (_) => const _ProductCardSkeleton()),
       );
     }
 
@@ -950,26 +822,26 @@ class _TopProducts extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      height: 200,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.zero,
-        itemCount: products!.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final p = products![i];
-          return SizedBox(
-            width: cardW,
-            child: _ProductCard(
-              name: p.name,
-              unitsSold: p.soldCount,
-              imageUrl: p.image,
-              fallbackGradient: _fallbackGradients[i % _fallbackGradients.length],
-            ),
-          );
-        },
-      ),
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: AppSpacing.md,
+      crossAxisSpacing: AppSpacing.md,
+      // 0.78 keeps the image area dominant while leaving room for two
+      // text rows below — tweaked visually so cards feel uniform without
+      // images being squished on narrow screens.
+      childAspectRatio: 0.78,
+      children: [
+        for (var i = 0; i < products!.length; i++)
+          _ProductCard(
+            name: products![i].name,
+            unitsSold: products![i].soldCount,
+            imageUrl: products![i].image,
+            fallbackGradient:
+                _fallbackGradients[i % _fallbackGradients.length],
+          ),
+      ],
     );
   }
 }
@@ -988,8 +860,23 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    // Custom container instead of AppCard so we get rounded image
+    // clipping AND a softer drop shadow that matches the rest of the
+    // app's elevated surfaces (Users cards, search bar, etc.).
+    return Container(
       clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppRadius.xLarge),
+        border: Border.all(color: AppColors.slateBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1005,7 +892,7 @@ class _ProductCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1058,8 +945,20 @@ class _ProductCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    return Container(
       clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppRadius.xLarge),
+        border: Border.all(color: AppColors.slateBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1067,7 +966,7 @@ class _ProductCardSkeleton extends StatelessWidget {
             child: Container(color: AppColors.surfaceContainerHigh),
           ),
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

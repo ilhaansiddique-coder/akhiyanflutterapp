@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/akhiyan_api.dart';
 import '../../../config/env.dart';
-import '../../features/auth/application/auth_controller.dart';
+import '../../features/auth/presentation/controllers/auth_controller.dart';
 import 'api_config.dart';
 import 'secure_token_storage.dart';
 
@@ -64,11 +64,27 @@ final orderDetailProvider =
   (ref, orderId) => ref.watch(akhiyanApiProvider).orders.detail(orderId),
 );
 
+/// Full product detail (with variants) by id. Cached for the app lifetime
+/// — admins commonly pick the same product family for multiple line items
+/// while building an order, and re-fetching `/products/:id` on every variant
+/// sheet open burns 200–800ms per tap on Coolify+sslip.io. Invalidated by
+/// [syncInvalidationProvider] when the backend emits a `products` bump.
+final productDetailProvider =
+    FutureProvider.family<Product, String>(
+  (ref, id) => ref.watch(akhiyanApiProvider).products.detail(id),
+);
+
 /// Async dashboard data scoped to a [DateTimeRange]. Keyed by the range so
-/// switching presets on the dashboard pill re-fetches transparently. Refresh
-/// the *current* range via `ref.invalidate(dashboardDataProvider(range))`.
+/// switching presets on the dashboard pill re-fetches transparently.
+///
+/// Auto-disposed. Without it, every `bumpVersion('orders'|'products')`
+/// arriving over SSE would force a full dashboard refetch (stats + recent
+/// orders + top products + revenue chart) even when the user is on a
+/// different screen — wasted bandwidth and battery. With autoDispose the
+/// provider tears down when no screen watches it, so off-screen bumps
+/// become no-ops; the dashboard fetches fresh on next entry.
 final dashboardDataProvider =
-    FutureProvider.family<DashboardData, DateTimeRange>(
+    FutureProvider.family.autoDispose<DashboardData, DateTimeRange>(
   (ref, range) => ref.watch(akhiyanApiProvider).dashboard.fetch(
         from: range.start,
         to: range.end,
@@ -240,12 +256,38 @@ abstract class SinglePageNotifier<T> extends Notifier<PagedListState<T>> {
     }();
   }
 
-  /// Reload the current page. Used by pull-to-refresh — clears the cache
-  /// entirely and refetches the current page from the network.
-  Future<void> refresh() {
+  /// Reload the current page from the network without blanking out the UI.
+  ///
+  /// Used by SSE-driven sync invalidation and pull-to-refresh. Sets
+  /// `refreshing: true` (a quiet flag) instead of `loading: true`, so
+  /// screens that key their "Loading page X..." overlay off `loading`
+  /// don't flash a blocking spinner just because the backend bumped a
+  /// version. The existing items stay rendered until the new ones swap
+  /// in atomically on success — feels instant.
+  Future<void> refresh() async {
     _pageCache.clear();
     _prefetching.clear();
-    return goToPage(state.currentPage <= 0 ? 1 : state.currentPage);
+    final page = state.currentPage <= 0 ? 1 : state.currentPage;
+    final prev = state;
+    state = prev.copyWith(refreshing: true, clearError: true);
+    try {
+      final res = await fetchPage(page, kListPageSize);
+      if (_disposed) return;
+      _pageCache[res.pagination.page] = res.data;
+      state = PagedListState<T>(
+        items: res.data,
+        currentPage: res.pagination.page,
+        totalPages: res.pagination.totalPages,
+        total: res.pagination.total,
+      );
+      _maybePrefetch(res.pagination.page + 1);
+    } catch (e) {
+      if (_disposed) return;
+      // Keep the previous items visible — the user shouldn't lose their
+      // list because a background bump fetch failed. Surface the error
+      // so the screen can opt to render an inline banner if it wants.
+      state = prev.copyWith(refreshing: false, error: e);
+    }
   }
 
   Future<void> nextPage() {
@@ -359,4 +401,37 @@ final inventoryListProvider = NotifierProvider<
 /// refresh anyway.
 final analyticsDataProvider = FutureProvider<AnalyticsData>(
   (ref) => ref.watch(akhiyanApiProvider).analytics.fetch(period: '30d'),
+);
+
+/// Order status options for the orders list filter chips. Pulled from
+/// the backend so admins can add or rename statuses (e.g. introducing
+/// `returned`) without a Flutter release. Falls back to a built-in
+/// list if the endpoint isn't deployed yet — the fallback below mirrors
+/// the web admin's status set so the two clients agree even during
+/// the rollout window.
+final orderStatusesProvider = FutureProvider<List<OrderStatusOption>>((ref) async {
+  try {
+    final list = await ref.watch(akhiyanApiProvider).orders.statuses();
+    if (list.isNotEmpty) return list;
+  } catch (_) {
+    // Swallow — caller (and the UI) gets the fallback below.
+  }
+  // Mirrors the web admin's order-status filter dropdown. Once the
+  // backend exposes GET /api/v1/m/orders/statuses, that response wins
+  // and this list becomes a safety net only.
+  return const <OrderStatusOption>[
+    OrderStatusOption(key: 'pending', label: 'Pending'),
+    OrderStatusOption(key: 'processing', label: 'Processing'),
+    OrderStatusOption(key: 'on_hold', label: 'On Hold'),
+    OrderStatusOption(key: 'confirmed', label: 'Confirmed'),
+    OrderStatusOption(key: 'courier_sent', label: 'Courier Sent'),
+  ];
+});
+
+/// Staff / admin accounts list. Powers the Staff tab on the Users screen.
+/// Refreshed live by [syncInvalidationProvider] when the backend emits a
+/// `staff` channel bump. Kept-alive (no autoDispose) so flipping tabs back
+/// and forth is instant.
+final staffListProvider = FutureProvider<List<StaffMember>>(
+  (ref) => ref.watch(akhiyanApiProvider).staff.list(),
 );

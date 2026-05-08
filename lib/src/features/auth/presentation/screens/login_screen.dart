@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../api/akhiyan_api.dart';
-import '../../../core/api/api_providers.dart';
-import '../../../core/router/app_router.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../application/auth_controller.dart';
+import '../../../../core/api/api_providers.dart';
+import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/colors.dart';
+import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/typography.dart';
+import '../controllers/auth_controller.dart';
 
 // Login screen uses the same purple brand as the rest of the app
 // (`AppColors.primary` and `AppColors.primaryContainer`) — kept as local
@@ -46,7 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).login(
+      await ref.read(authControllerProvider.notifier).signIn(
             email: _email.text.trim(),
             password: _password.text,
           );
@@ -58,18 +58,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final defaultRange = DateTimeRange(start: today, end: today);
+      // Dashboard + product list — what the dashboard route renders.
       unawaited(ref.read(dashboardDataProvider(defaultRange).future));
       unawaited(ref.read(productsListProvider.notifier).goToPage(1));
       unawaited(ref.read(currentUserProvider.future));
+      // Hot lookups used by the order/product/customer forms. Pre-warming
+      // these means the moment the user taps "+", every dropdown is
+      // already populated — no spinner on form open.
+      unawaited(ref.read(categoriesProvider.future));
+      unawaited(ref.read(brandsProvider.future));
+      unawaited(ref.read(orderStatusesProvider.future));
+      unawaited(ref.read(staffListProvider.future));
+      unawaited(ref.read(ordersListProvider.notifier).goToPage(1));
+      unawaited(ref.read(customersListProvider.notifier).goToPage(1));
       context.go(AppRoute.dashboard.path);
     } on ArgumentError {
       setState(() => _error = 'Email and password are required.');
-    } on ApiException catch (e) {
-      setState(() => _error = e.message);
-    } on NetworkException {
-      setState(() => _error = 'No internet connection.');
-    } catch (_) {
-      setState(() => _error = 'Login failed. Try again.');
+    } on Object catch (e) {
+      // Repository converts everything to a Failure subtype; describeError
+      // produces a friendly string without us having to type-test here.
+      setState(() => _error = describeError(e, fallback: 'Login failed. Try again.'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

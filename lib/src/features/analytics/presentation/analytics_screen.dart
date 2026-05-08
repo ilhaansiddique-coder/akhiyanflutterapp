@@ -9,7 +9,10 @@ import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/coming_soon.dart';
+import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/stat_card.dart';
+import '../../../core/errors/error_mapper.dart';
+import '../../../core/widgets/states/states.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -29,6 +32,7 @@ class AnalyticsScreen extends ConsumerWidget {
         ),
         title: const Text('Analytics'),
         actions: [
+          const NotificationBell(),
           IconButton(
             onPressed: () => ref.invalidate(analyticsDataProvider),
             icon: const Icon(Icons.refresh),
@@ -41,28 +45,14 @@ class AnalyticsScreen extends ConsumerWidget {
         ],
       ),
       body: asyncAnalytics.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const LoadingView(),
         error: (e, _) => (e is api.ApiException && e.isNotFound)
             ? comingSoonBody('Analytics')
-            : Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.cloud_off,
-                    size: 48, color: AppColors.error),
-                const SizedBox(height: AppSpacing.md),
-                Text(_describeError(e), textAlign: TextAlign.center),
-                const SizedBox(height: AppSpacing.md),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(analyticsDataProvider),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
+            : ErrorView(
+                message: describeError(e, fallback: 'Could not load analytics'),
+                icon: Icons.cloud_off,
+                onRetry: () => ref.invalidate(analyticsDataProvider),
+              ),
         data: (data) => RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(analyticsDataProvider);
@@ -199,12 +189,6 @@ class AnalyticsScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-String _describeError(Object e) {
-  if (e is api.ApiException) return e.message;
-  if (e is api.NetworkException) return 'No internet connection';
-  return 'Could not load analytics';
 }
 
 String _formatCompact(num n) {

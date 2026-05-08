@@ -9,6 +9,7 @@ import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/coming_soon.dart';
+import '../../../core/widgets/notification_bell.dart';
 import '../../../core/widgets/page_loading_overlay.dart';
 import '../../../core/widgets/pagination_bar.dart';
 import '../../../core/widgets/skeleton.dart';
@@ -55,6 +56,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
         ),
         title: const Text('Inventory'),
         actions: [
+          const NotificationBell(),
           IconButton(
             onPressed: () =>
                 ref.read(inventoryListProvider.notifier).refresh(),
@@ -119,7 +121,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               .where((p) => p.level == 'ok' || p.level == 'unlimited')
               .length;
 
-          final isPageSwitching = state.loading && state.items.isNotEmpty;
+          final isPageSwitching =
+                    _loadingPage != null && state.loading && state.items.isNotEmpty;
           final list = RefreshIndicator(
             onRefresh: () =>
                 ref.read(inventoryListProvider.notifier).refresh(),

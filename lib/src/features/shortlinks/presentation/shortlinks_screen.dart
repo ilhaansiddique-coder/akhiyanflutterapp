@@ -5,6 +5,7 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_drawer.dart';
+import '../../../core/widgets/notification_bell.dart';
 
 class ShortlinksScreen extends StatelessWidget {
   const ShortlinksScreen({super.key});
@@ -23,6 +24,7 @@ class ShortlinksScreen extends StatelessWidget {
         ),
         title: const Text('Shortlinks'),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Home',
             onPressed: () => context.go('/dashboard'),

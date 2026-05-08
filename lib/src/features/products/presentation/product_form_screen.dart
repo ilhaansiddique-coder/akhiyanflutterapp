@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../api/akhiyan_api.dart' as api;
 import '../../../core/api/api_providers.dart';
@@ -8,6 +9,9 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/typography.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/notification_bell.dart';
+import '../../../core/errors/error_mapper.dart';
+import '../../../core/widgets/states/states.dart';
 import '../domain/product.dart';
 
 /// Combined Add/Edit product form. Wired to `/products` via
@@ -39,9 +43,19 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   String? _brandId;
   ProductStatus _status = ProductStatus.draft;
 
+  /// Live image URL list for this product. First entry maps to `image` on
+  /// the backend; the full list maps to `images` (CSV). Order is
+  /// preserved — index 0 is the primary image shown on cards/PDPs.
+  /// Capped at [_kMaxImages] to match the backend `Up to 5 images` limit
+  /// surfaced in the section header.
+  final List<String> _imageUrls = [];
+  bool _uploadingImage = false;
+
   bool _loading = false;
   bool _saving = false;
   Object? _loadError;
+
+  static const _kMaxImages = 5;
 
   bool get _isEdit => widget.productId != null;
 
@@ -80,10 +94,27 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       } else {
         _price.text = p.price.toStringAsFixed(0);
       }
+      // Hydrate the image gallery from the backend. Backend stores `image`
+      // (primary) plus an optional comma-separated `images` for the rest;
+      // we merge them into one ordered list, dropping duplicates so a
+      // product whose primary URL also appears in `images` doesn't render
+      // the same tile twice.
+      final urls = <String>[];
+      if (p.image.isNotEmpty) urls.add(p.image);
+      final extras = p.images;
+      if (extras != null && extras.isNotEmpty) {
+        for (final raw in extras.split(',')) {
+          final u = raw.trim();
+          if (u.isNotEmpty && !urls.contains(u)) urls.add(u);
+        }
+      }
       setState(() {
         _status = p.isActive ? ProductStatus.active : ProductStatus.draft;
         _categoryId = p.categoryId;
         _brandId = p.brandId;
+        _imageUrls
+          ..clear()
+          ..addAll(urls);
         _loading = false;
       });
     } catch (e) {
@@ -109,7 +140,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   }
 
   /// Builds the JSON body sent to POST /products and PATCH /products/:id.
-  /// Only includes fields the form actually exposes.
+  /// Only includes fields the form actually exposes. The image gallery is
+  /// split into `image` (primary, index 0) + `images` (comma-separated
+  /// rest) to match the backend schema.
   Map<String, dynamic> _buildPayload(ProductStatus finalStatus) {
     final regular = double.tryParse(_price.text.trim()) ?? 0;
     final saleStr = _salePrice.text.trim();
@@ -117,6 +150,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     final hasSale = sale != null && sale > 0 && sale < regular;
     final stock = int.tryParse(_stock.text.trim()) ?? 0;
     final desc = _description.text.trim();
+    final primaryImage = _imageUrls.isEmpty ? null : _imageUrls.first;
+    final extraImages =
+        _imageUrls.length <= 1 ? '' : _imageUrls.skip(1).join(',');
     return {
       'name': _name.text.trim(),
       if (desc.isNotEmpty) 'description': desc,
@@ -124,7 +160,69 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       if (hasSale) 'originalPrice': regular,
       'stock': stock,
       'isActive': finalStatus == ProductStatus.active,
+      // Always send `image`/`images` even when empty so PATCHing an edit
+      // can clear the gallery (sending nothing wouldn't overwrite).
+      'image': primaryImage ?? '',
+      'images': extraImages,
     };
+  }
+
+  /// Pick a single image from the device gallery, upload it, and append
+  /// the returned URL to [_imageUrls]. Errors surface via snackbar; we
+  /// never throw out of here so the form stays interactive.
+  Future<void> _pickAndUploadImage() async {
+    if (_uploadingImage) return;
+    if (_imageUrls.length >= _kMaxImages) {
+      _snack('Limit is $_kMaxImages images per product');
+      return;
+    }
+    final picker = ImagePicker();
+    final XFile? file;
+    try {
+      file = await picker.pickImage(
+        source: ImageSource.gallery,
+        // Cap dimensions before upload — keeps payloads small enough that
+        // serverless upload routes don't time out on cellular networks.
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 88,
+      );
+    } catch (e) {
+      _snack('Could not open gallery: $e');
+      return;
+    }
+    if (file == null) return; // user cancelled
+
+    setState(() => _uploadingImage = true);
+    try {
+      final bytes = await file.readAsBytes();
+      final url = await ref.read(akhiyanApiProvider).media.upload(
+            bytes: bytes,
+            filename: file.name,
+          );
+      if (!mounted) return;
+      setState(() => _imageUrls.add(url));
+    } on api.ApiException catch (e) {
+      if (!mounted) return;
+      _snack(e.statusCode == 404
+          ? 'Image upload endpoint not deployed yet on the backend'
+          : 'Upload failed: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      _snack('Upload failed: $e');
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  void _removeImageAt(int index) {
+    setState(() => _imageUrls.removeAt(index));
+  }
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   Future<void> _save({ProductStatus? overrideStatus}) async {
@@ -142,8 +240,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       } else {
         await ref.read(akhiyanApiProvider).products.create(payload);
       }
-      ref.invalidate(productsListProvider);
-      ref.invalidate(inventoryListProvider);
+      // No local invalidate — the backend's `bumpVersion('products')` reaches
+      // us via SSE within ~1s and triggers a single refresh through
+      // sync_invalidation. Doing it here too caused double-fetches (one
+      // immediate, one on bump arrival) for every save.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -161,7 +261,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_describeError(e)),
+          content: Text(describeError(e, fallback: 'Could not save product')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -172,8 +272,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     setState(() => _saving = true);
     try {
       await ref.read(akhiyanApiProvider).products.delete(widget.productId!);
-      ref.invalidate(productsListProvider);
-      ref.invalidate(inventoryListProvider);
+      // SSE 'products' bump refreshes the lists; see save handler comment.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Product deleted')),
@@ -184,7 +283,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_describeError(e)),
+          content: Text(describeError(e, fallback: 'Could not save product')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -239,6 +338,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           ),
         ),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Home',
             onPressed: () => context.go('/dashboard'),
@@ -247,33 +347,18 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const LoadingView()
           : _loadError != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.cloud_off,
-                            size: 48, color: AppColors.error),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(_describeError(_loadError!),
-                            textAlign: TextAlign.center),
-                        const SizedBox(height: AppSpacing.md),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _loadError = null;
-                              _loading = true;
-                            });
-                            _loadExisting();
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
+              ? ErrorView(
+                  message: describeError(_loadError!, fallback: 'Could not load product'),
+                  icon: Icons.cloud_off,
+                  onRetry: () {
+                    setState(() {
+                      _loadError = null;
+                      _loading = true;
+                    });
+                    _loadExisting();
+                  },
                 )
               : Form(
                   key: _formKey,
@@ -285,7 +370,13 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       AppSpacing.md,
                     ),
                     children: [
-                      const _ImagesSection(),
+                      _ImagesSection(
+                        urls: _imageUrls,
+                        uploading: _uploadingImage,
+                        onAdd: _pickAndUploadImage,
+                        onRemove: _removeImageAt,
+                        max: _kMaxImages,
+                      ),
                       const SizedBox(height: AppSpacing.lg),
                       _BasicInfoSection(
                         name: _name,
@@ -328,12 +419,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       ),
     );
   }
-}
-
-String _describeError(Object e) {
-  if (e is api.ApiException) return e.message;
-  if (e is api.NetworkException) return 'No internet connection';
-  return 'Could not save product';
 }
 
 // ─── Shared form helpers ─────────────────────────────────────────────────
@@ -404,10 +489,23 @@ class _SectionTitle extends StatelessWidget {
 // ─── Product Images section (no enclosing card) ──────────────────────────
 
 class _ImagesSection extends StatelessWidget {
-  const _ImagesSection();
+  const _ImagesSection({
+    required this.urls,
+    required this.uploading,
+    required this.onAdd,
+    required this.onRemove,
+    required this.max,
+  });
+
+  final List<String> urls;
+  final bool uploading;
+  final VoidCallback onAdd;
+  final void Function(int index) onRemove;
+  final int max;
 
   @override
   Widget build(BuildContext context) {
+    final canAddMore = urls.length < max;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -426,7 +524,7 @@ class _ImagesSection extends StatelessWidget {
                 ),
               ),
               Text(
-                'Up to 5 images',
+                '${urls.length}/$max images',
                 style: AppTypography.bodySm.copyWith(
                   color: AppColors.outline,
                 ),
@@ -436,15 +534,22 @@ class _ImagesSection extends StatelessWidget {
         ),
         SizedBox(
           height: 128,
-          child: ListView(
+          child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            children: const [
-              _AddImageTile(),
-              SizedBox(width: AppSpacing.gutter),
-              _ExistingImageTile(filled: true),
-              SizedBox(width: AppSpacing.gutter),
-              _ExistingImageTile(filled: false),
-            ],
+            itemCount: urls.length + (canAddMore ? 1 : 0),
+            separatorBuilder: (_, _) =>
+                const SizedBox(width: AppSpacing.gutter),
+            itemBuilder: (context, i) {
+              if (canAddMore && i == 0) {
+                return _AddImageTile(uploading: uploading, onTap: onAdd);
+              }
+              final urlIndex = canAddMore ? i - 1 : i;
+              return _ExistingImageTile(
+                url: urls[urlIndex],
+                isPrimary: urlIndex == 0,
+                onRemove: () => onRemove(urlIndex),
+              );
+            },
           ),
         ),
       ],
@@ -453,7 +558,9 @@ class _ImagesSection extends StatelessWidget {
 }
 
 class _AddImageTile extends StatelessWidget {
-  const _AddImageTile();
+  const _AddImageTile({required this.uploading, required this.onTap});
+  final bool uploading;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -464,28 +571,36 @@ class _AddImageTile extends StatelessWidget {
         color: AppColors.surfaceContainer,
         borderRadius: BorderRadius.circular(AppRadius.large),
         child: InkWell(
-          onTap: () {},
+          onTap: uploading ? null : onTap,
           borderRadius: BorderRadius.circular(AppRadius.large),
-          child: const DottedBorderBox(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_photo_alternate_outlined,
-                  size: 32,
-                  color: AppColors.onSurfaceVariant,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Add Image',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
+          child: DottedBorderBox(
+            child: Center(
+              child: uploading
+                  ? const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_photo_alternate_outlined,
+                          size: 32,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Add Image',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),
@@ -544,9 +659,20 @@ class _DottedBorderPainter extends CustomPainter {
   bool shouldRepaint(_DottedBorderPainter oldDelegate) => false;
 }
 
+/// Live image preview tile. Renders the hosted URL via [Image.network]
+/// with a graceful fallback (broken-image glyph) if the host can't be
+/// reached or the URL 404s — the form should never go red over a missing
+/// thumbnail. Primary tile (index 0) gets a subtle badge so admins know
+/// which image becomes the storefront card hero.
 class _ExistingImageTile extends StatelessWidget {
-  const _ExistingImageTile({required this.filled});
-  final bool filled;
+  const _ExistingImageTile({
+    required this.url,
+    required this.isPrimary,
+    required this.onRemove,
+  });
+  final String url;
+  final bool isPrimary;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -556,20 +682,59 @@ class _ExistingImageTile extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: filled
-                    ? AppColors.surfaceContainerHigh
-                    : AppColors.surfaceContainer,
-                borderRadius: BorderRadius.circular(AppRadius.large),
-              ),
-              child: const Icon(
-                Icons.image_outlined,
-                size: 36,
-                color: AppColors.onSurfaceVariant,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.large),
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  color: AppColors.surfaceContainerHigh,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.broken_image_outlined,
+                    size: 32,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    color: AppColors.surfaceContainer,
+                    alignment: Alignment.center,
+                    child: const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                },
               ),
             ),
           ),
+          if (isPrimary)
+            Positioned(
+              left: 6,
+              bottom: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: const Text(
+                  'Primary',
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: AppColors.onPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             top: 6,
             right: 6,
@@ -578,7 +743,7 @@ class _ExistingImageTile extends StatelessWidget {
               shape: const CircleBorder(),
               elevation: 1,
               child: InkWell(
-                onTap: () {},
+                onTap: onRemove,
                 customBorder: const CircleBorder(),
                 child: const SizedBox(
                   width: 24,
@@ -1112,7 +1277,15 @@ class _ActionBar extends StatelessWidget {
             top: BorderSide(color: AppColors.borderSubtle),
           ),
         ),
-        padding: const EdgeInsets.all(AppSpacing.md),
+        // Extra bottom space so the action buttons don't visually
+        // collide with the shell's centered + FAB which sticks up from
+        // the bottom nav. xl + sm clears the FAB notch comfortably.
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.xl + AppSpacing.sm,
+        ),
         child: Row(
           children: [
             Expanded(

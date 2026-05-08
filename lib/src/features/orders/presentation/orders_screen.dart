@@ -24,7 +24,10 @@ class OrdersScreen extends ConsumerStatefulWidget {
 }
 
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
-  OrderStatus? _filter;
+  /// Selected status key (e.g. 'pending'); null means All. String-keyed
+  /// instead of [OrderStatus] so the filter chips can render any status
+  /// the backend defines, even ones the local enum doesn't know about.
+  String? _filter;
   String _query = '';
 
   /// Page number the user just tapped that is currently being fetched.
@@ -121,24 +124,37 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
           ),
           // ── Filter chips ──────────────────────────────────────────────
+          //
+          // Driven by [orderStatusesProvider] so adding a new status on
+          // the backend (e.g. `returned`) appears here without a Flutter
+          // release. The provider falls back to a built-in list when
+          // the `/orders/statuses` route isn't deployed yet.
           SizedBox(
             height: 36,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              children: [
-                _FilterChip(
-                  label: 'All',
-                  selected: _filter == null,
-                  onTap: () => setState(() => _filter = null),
-                ),
-                for (final s in OrderStatus.values)
-                  _FilterChip(
-                    label: _statusLabel(s),
-                    selected: _filter == s,
-                    onTap: () => setState(() => _filter = s),
-                  ),
-              ],
+            child: Consumer(
+              builder: (_, ref, _) {
+                final asyncStatuses = ref.watch(orderStatusesProvider);
+                final statuses =
+                    asyncStatuses.value ?? const <api.OrderStatusOption>[];
+                return ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  children: [
+                    _FilterChip(
+                      label: 'All',
+                      selected: _filter == null,
+                      onTap: () => setState(() => _filter = null),
+                    ),
+                    for (final s in statuses)
+                      _FilterChip(
+                        label: s.label,
+                        selected: _filter == s.key,
+                        onTap: () => setState(() => _filter = s.key),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -171,7 +187,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 }
                 final visible = state.items.where((o) {
                   if (_filter != null &&
-                      parseOrderStatus(o.status) != _filter) {
+                      o.status.toLowerCase() != _filter!.toLowerCase()) {
                     return false;
                   }
                   if (_query.isEmpty) return true;
@@ -191,8 +207,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     ),
                   );
                 }
+                // Only treat this as a "page switch" when the user actually
+                // tapped a pagination button (`_loadingPage != null`). The
+                // SSE sync invalidator also calls `notifier.refresh()` in
+                // the background after a backend bump — that flips
+                // `state.loading` true even though the user didn't tap
+                // anything, and we don't want a "Loading page 1..." overlay
+                // covering the screen on every order placed elsewhere.
                 final isPageSwitching =
-                    state.loading && state.items.isNotEmpty;
+                    _loadingPage != null && state.loading && state.items.isNotEmpty;
                 final list = RefreshIndicator(
                   onRefresh: () =>
                       ref.read(ordersListProvider.notifier).refresh(),
@@ -248,14 +271,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     );
   }
 
-  String _statusLabel(OrderStatus s) => switch (s) {
-        OrderStatus.pending => 'Pending',
-        OrderStatus.confirmed => 'Confirmed',
-        OrderStatus.processing => 'Processing',
-        OrderStatus.shipped => 'Shipped',
-        OrderStatus.delivered => 'Delivered',
-        OrderStatus.cancelled => 'Cancelled',
-      };
 }
 
 String _describeError(Object e) {
