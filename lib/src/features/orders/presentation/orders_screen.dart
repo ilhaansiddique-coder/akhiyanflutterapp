@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../api/akhiyan_api.dart' as api;
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/app_shell_app_bar.dart';
-import '../../../core/widgets/order_status_badge.dart';
-import '../../../core/widgets/page_loading_overlay.dart';
-import '../../../core/widgets/pagination_bar.dart';
-import '../../../core/widgets/skeleton.dart';
-import '../domain/order.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/order_status_badge.dart';
+import 'package:akhiyan_admin/src/core/widgets/page_loading_overlay.dart';
+import 'package:akhiyan_admin/src/core/widgets/pagination_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/skeleton.dart';
+import 'package:akhiyan_admin/src/features/orders/domain/order.dart';
 
 /// Orders list — wired to the live `/orders` endpoint via [ordersListProvider].
 class OrdersScreen extends ConsumerStatefulWidget {
@@ -660,14 +660,14 @@ class _OrderCardSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SkeletonText(width: 160, fontSize: 14),
+                SkeletonText(width: 160),
                 SizedBox(height: 6),
-                SkeletonText(width: 120, fontSize: 13),
+                SkeletonText(fontSize: 13),
               ],
             ),
           ),
           SizedBox(width: AppSpacing.md),
-          SkeletonText(width: 60, fontSize: 14),
+          SkeletonText(width: 60),
         ],
       ),
     );

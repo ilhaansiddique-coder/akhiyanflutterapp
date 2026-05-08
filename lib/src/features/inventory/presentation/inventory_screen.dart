@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../api/akhiyan_api.dart' as api;
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_drawer.dart';
-import '../../../core/widgets/coming_soon.dart';
-import '../../../core/widgets/notification_bell.dart';
-import '../../../core/widgets/page_loading_overlay.dart';
-import '../../../core/widgets/pagination_bar.dart';
-import '../../../core/widgets/skeleton.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_drawer.dart';
+import 'package:akhiyan_admin/src/core/widgets/coming_soon.dart';
+import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
+import 'package:akhiyan_admin/src/core/widgets/page_loading_overlay.dart';
+import 'package:akhiyan_admin/src/core/widgets/pagination_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/skeleton.dart';
 
 /// Inventory list — derived from the products endpoint via
 /// [inventoryListProvider]. Numbered pagination matches the products /
@@ -280,7 +280,7 @@ class _InventoryRow extends StatelessWidget {
               width: 48,
               height: 48,
               child: item.image.isEmpty
-                  ? Container(
+                  ? ColoredBox(
                       color: AppColors.surfaceContainer,
                       child: const Icon(Icons.image_outlined,
                           color: AppColors.onSurfaceVariant),
@@ -288,7 +288,7 @@ class _InventoryRow extends StatelessWidget {
                   : Image.network(
                       item.image,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
+                      errorBuilder: (_, _, _) => ColoredBox(
                         color: AppColors.surfaceContainer,
                         child: const Icon(Icons.image_outlined,
                             color: AppColors.onSurfaceVariant),
@@ -317,7 +317,7 @@ class _InventoryRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                item.unlimitedStock == true ? '∞' : '${item.stock}',
+                item.unlimitedStock ?? false ? '∞' : '${item.stock}',
                 style: AppTypography.dataDisplay.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,
@@ -364,14 +364,14 @@ class _InventoryRowSkeleton extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SkeletonText(width: 180, fontSize: 14),
+                  SkeletonText(width: 180),
                   SizedBox(height: 6),
                   SkeletonText(width: 100, fontSize: 13),
                 ],
               ),
             ),
             SizedBox(width: AppSpacing.md),
-            SkeletonText(width: 50, fontSize: 14),
+            SkeletonText(width: 50),
           ],
         ),
       ),

@@ -1,8 +1,9 @@
+import 'package:akhiyan_admin/app.dart' show AkhiyanAdminApp;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../api/api_providers.dart';
-import 'sync_client.dart';
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
 
 /// App-root listener that refreshes resource providers when their SSE
 /// channel bumps. This is the bridge between the network-level [SyncClient]
@@ -29,9 +30,7 @@ import 'sync_client.dart';
 /// the app's lifetime.
 final syncInvalidationProvider = Provider<void>((ref) {
   final invalidator = _SyncInvalidator(ref);
-  ref.listen<SyncState>(syncClientProvider, (prev, next) {
-    invalidator.onState(prev, next);
-  }, fireImmediately: true);
+  ref.listen<SyncState>(syncClientProvider, invalidator.onState, fireImmediately: true);
   ref.onDispose(invalidator.dispose);
 });
 
@@ -90,7 +89,6 @@ class _SyncInvalidator {
         // invalidate is supported in Riverpod 3 and propagates to all
         // currently-built keys.
         _ref.invalidate(dashboardDataProvider);
-        break;
       case 'products':
         _ref.read(productsListProvider.notifier).refresh();
         // Inventory mirrors product stock; refresh that page too.
@@ -101,13 +99,16 @@ class _SyncInvalidator {
         // family so a re-opened variant sheet sees the updated variants
         // (added/removed, price changed, stock changed).
         _ref.invalidate(productDetailProvider);
-        break;
       case 'customers':
         _ref.read(customersListProvider.notifier).refresh();
-        break;
       case 'staff':
         _ref.invalidate(staffListProvider);
-        break;
+      case 'categories':
+        // FutureProvider with no autoDispose — invalidate is enough; the
+        // categories screen watches via ref.watch and rebuilds on next frame.
+        _ref.invalidate(categoriesProvider);
+      case 'brands':
+        _ref.invalidate(brandsProvider);
       // 'reviews', 'banners', 'menus', 'flash-sales', 'settings' — no
       // listening providers wired yet; bumps recorded in the version map
       // for any future screen that watches them via syncVersionProvider.

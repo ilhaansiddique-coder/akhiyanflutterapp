@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../theme/colors.dart';
-import '../theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 
 /// Replaces Flutter's red ErrorWidget. Shown when a widget's build throws —
 /// users see a friendly card instead of the framework's red screen of stack
 /// frames. The raw error is only surfaced in debug builds.
 class FriendlyErrorWidget extends StatelessWidget {
-  const FriendlyErrorWidget({super.key, required this.details});
+  const FriendlyErrorWidget({required this.details, super.key});
 
   final FlutterErrorDetails details;
 

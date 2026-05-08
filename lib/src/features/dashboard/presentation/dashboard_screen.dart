@@ -3,15 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../api/akhiyan_api.dart';
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/app_shell_app_bar.dart';
-import '../../../core/widgets/date_range_picker_dialog.dart';
-import '../../auth/presentation/controllers/auth_controller.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart';
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/date_range_picker_dialog.dart';
+import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
 
 /// Dashboard home — bound to live data via [dashboardDataProvider].
 /// Hardcoded numbers were replaced with reactive bindings; while data is
@@ -493,7 +493,6 @@ class _DashStat extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(
                 child: Text(
@@ -502,7 +501,7 @@ class _DashStat extends StatelessWidget {
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: valueColor ?? AppColors.onBackground,
-                    height: 1.0,
+                    height: 1,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../api/akhiyan_api.dart' as api;
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/live_theme.dart';
-import '../../../core/widgets/app_drawer.dart';
-import '../../../core/widgets/notification_bell.dart';
-import '../../../core/widgets/coming_soon.dart';
-import '../../../core/widgets/page_loading_overlay.dart';
-import '../../../core/widgets/pagination_bar.dart';
-import '../../../core/widgets/skeleton.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/live_theme.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_drawer.dart';
+import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
+import 'package:akhiyan_admin/src/core/widgets/coming_soon.dart';
+import 'package:akhiyan_admin/src/core/widgets/page_loading_overlay.dart';
+import 'package:akhiyan_admin/src/core/widgets/pagination_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/skeleton.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
 
 /// Unified Users screen. Merges customers (paginated, `/customers`) and staff
 /// (single-fetch, `/staff`) into one filterable list. The tab UI used to live
@@ -74,11 +74,11 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   /// `CustomersApi` only provides list + detail. Tell the user honestly
   /// rather than pretend.
   void _onCustomerEdit(api.CustomerListItem c) {
-    _toast('Customer edit isn\'t available on the mobile API yet');
+    _toast("Customer edit isn't available on the mobile API yet");
   }
 
   void _onCustomerDelete(api.CustomerListItem c) {
-    _toast('Customer delete isn\'t available on the mobile API yet');
+    _toast("Customer delete isn't available on the mobile API yet");
   }
 
   /// Open the edit-staff dialog. On save we call `api.staff.update` and
@@ -431,13 +431,11 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           final r = s.role.toLowerCase();
           return r == 'admin' || r == 'super_admin' || r == 'superadmin';
         });
-        break;
       case _RoleFilter.staff:
         rows = rows.where((s) {
           final r = s.role.toLowerCase();
           return r != 'admin' && r != 'super_admin' && r != 'superadmin';
         });
-        break;
       case _RoleFilter.all:
         break;
     }
@@ -769,7 +767,6 @@ class _CustomerCard extends StatelessWidget {
                   _TrailingActions(
                     pill: const _RolePill(
                       label: 'Customer',
-                      tone: _PillTone.customer,
                     ),
                     onEdit: onEdit,
                     onDelete: onDelete,
@@ -966,7 +963,7 @@ class _RolePill extends ConsumerWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.slateBorder, width: 1),
+        border: Border.all(color: AppColors.slateBorder),
       ),
       child: Text(
         label,
@@ -1087,7 +1084,7 @@ class _CustomerCardSkeleton extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SkeletonText(width: 160, fontSize: 14),
+                  SkeletonText(width: 160),
                   SizedBox(height: 6),
                   SkeletonText(width: 200, fontSize: 13),
                 ],

@@ -1,11 +1,12 @@
+import 'package:akhiyan_admin/src/core/widgets/app_shell.dart' show AppShell;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/customers/presentation/customers_screen.dart'
+import 'package:akhiyan_admin/src/features/customers/presentation/customers_screen.dart'
     show NewUserDialog;
-import '../theme/colors.dart';
-import '../theme/spacing.dart';
-import '../theme/typography.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
 
 /// Open the global "Create" bottom sheet. Wired to the centered + button
 /// in [AppShell]'s bottom nav so it's reachable from every screen, and

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/colors.dart';
-import '../theme/spacing.dart';
-import '../theme/typography.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
 
 /// Centered "Loading page X..." card shown on top of a dimmed list while a
 /// pagination fetch is in flight. The list itself should be wrapped with an
@@ -13,7 +13,7 @@ import '../theme/typography.dart';
 /// show this on the first-load case — those screens render skeleton rows
 /// instead.
 class PageLoadingOverlay extends StatelessWidget {
-  const PageLoadingOverlay({super.key, required this.targetPage});
+  const PageLoadingOverlay({required this.targetPage, super.key});
 
   /// 1-based page number the user just tapped. Shown in the label so the
   /// feedback ties directly to the page button they pressed.

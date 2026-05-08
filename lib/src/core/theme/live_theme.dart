@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../api/api_providers.dart';
-import '../sync/sync_client.dart';
-import 'app_theme.dart';
-import 'colors.dart';
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
+import 'package:akhiyan_admin/src/core/theme/app_theme.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
 
 /// Decoded payload from `GET /api/v1/m/theme`.
 ///
@@ -14,11 +14,6 @@ import 'colors.dart';
 /// defaults from `theme-tokens.ts`, and reshapes into this nested tree.
 @immutable
 class LiveTheme {
-  final Map<String, String> colors;
-  final Map<String, dynamic> fonts;
-  final Map<String, num> radius;
-  final Map<String, num> spacing;
-  final Map<String, String?> branding;
 
   const LiveTheme({
     required this.colors,
@@ -61,6 +56,11 @@ class LiveTheme {
       branding: nullableStringMap(json['branding']),
     );
   }
+  final Map<String, String> colors;
+  final Map<String, dynamic> fonts;
+  final Map<String, num> radius;
+  final Map<String, num> spacing;
+  final Map<String, String?> branding;
 
   /// Convert a `#rrggbb` hex string to a Color. Falls back to [fallback] on
   /// any malformed input (defensive — the customizer can save anything).
@@ -133,7 +133,7 @@ class LiveTheme {
     final headingFamily = _extractFamily(fonts['heading'] as String?);
     final baseSize = (fonts['size_base'] as num?)?.toDouble() ?? 16.0;
 
-    TextTheme textTheme = base.textTheme.apply(
+    var textTheme = base.textTheme.apply(
       bodyColor: textBody,
       displayColor: foreground,
       fontSizeFactor: baseSize / 16.0,

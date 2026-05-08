@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'src/core/notifications/notification_store.dart';
-import 'src/core/router/app_router.dart';
-import 'src/core/sync/sync_invalidation.dart';
-import 'src/core/theme/live_theme.dart';
+import 'package:akhiyan_admin/src/core/notifications/notification_store.dart';
+import 'package:akhiyan_admin/src/core/router/app_router.dart';
+import 'package:akhiyan_admin/src/core/sync/sync_invalidation.dart';
+import 'package:akhiyan_admin/src/core/theme/live_theme.dart';
 
 class AkhiyanAdminApp extends ConsumerWidget {
   const AkhiyanAdminApp({super.key});

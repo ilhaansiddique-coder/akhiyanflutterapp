@@ -1,238 +1,451 @@
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/navigation/live_nav.dart';
+import 'package:akhiyan_admin/src/core/router/app_router.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/live_theme.dart';
+import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../api/akhiyan_api.dart';
-import '../../features/auth/domain/entities/user.dart';
-import '../../features/auth/presentation/controllers/auth_controller.dart';
-import '../api/api_providers.dart';
-import '../router/app_router.dart';
-import '../theme/colors.dart';
-import '../theme/spacing.dart';
-import '../theme/typography.dart';
-
-/// Left side drawer shared by every top-level tab in the bottom-nav shell.
+/// Side drawer modelled on the web dashboard sidebar
+/// (`src/components/DashboardLayout.tsx`).
 ///
-/// Hosts the secondary nav items that used to live in the now-removed "More"
-/// tab: profile card, feature shortcuts (Inventory, Customers, …), Settings,
-/// Help & Support, and Sign out.
-class AppDrawer extends ConsumerWidget {
+/// Drawn entirely on top of the live primary colour so a Customizer change
+/// on the web admin re-paints the sidebar in real time over SSE — no app
+/// restart, no manual refresh. The nav tree itself is also fetched from
+/// the server (`/api/v1/m/ui/nav`) so adding/renaming menu items is a
+/// server-side edit, not a Flutter release.
+///
+/// Items whose backing screen has not been built in Flutter yet render
+/// disabled (low-opacity) and surface a "Coming soon" snackbar on tap, so
+/// the menu structure stays visually identical to the web admin even
+/// before every screen has a mobile equivalent.
+class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(authControllerProvider);
-    final items = <(IconData, String, String)>[
-      (Icons.people_outline, 'Users', '/customers'),
-      (Icons.local_shipping_outlined, 'Courier Management', '/courier'),
-      (Icons.link_outlined, 'Shortlinks', '/shortlinks'),
-      (Icons.analytics_outlined, 'Analytics', '/analytics'),
-      (Icons.notifications_outlined, 'Notifications', '/notifications'),
-      (Icons.security_outlined, 'Fraud & Security', '/fraud-security'),
-    ];
+  ConsumerState<AppDrawer> createState() => _AppDrawerState();
+}
 
-    void go(String path) {
-      Navigator.of(context).pop();
-      context.push(path);
-    }
+class _AppDrawerState extends ConsumerState<AppDrawer> {
+  /// Per-group expanded/collapsed flags. Auto-expands the group containing
+  /// the current route so the user lands on a sensible default state.
+  final Map<String, bool> _openGroups = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final navAsync = ref.watch(liveNavProvider);
+    final themeAsync = ref.watch(liveThemeProvider);
+
+    // Resolve primary from the live theme; fall back to the static brand
+    // colour while the first fetch resolves.
+    final Color primary = themeAsync.maybeWhen(
+      data: (t) => t.colorOr('primary', AppColors.primary),
+      orElse: () => AppColors.primary,
+    );
+    final String? logoUrl = themeAsync.maybeWhen(
+      data: (t) => t.branding['site_logo'],
+      orElse: () => null,
+    );
 
     return Drawer(
-      backgroundColor: const Color(0xFFF8F9FC),
+      backgroundColor: primary,
+      width: 280,
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          children: [
-            if (session != null) _ProfileCard(session: session, ref: ref),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(AppRadius.large),
-                border: Border.all(color: AppColors.outlineVariant),
-              ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < items.length; i++) ...[
-                    ListTile(
-                      leading: Icon(items[i].$1, color: AppColors.primary),
-                      title: Text(items[i].$2, style: AppTypography.bodyMd),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: AppColors.onSurfaceVariant),
-                      onTap: () => go(items[i].$3),
-                    ),
-                    if (i < items.length - 1)
-                      const Divider(
-                          height: 1,
-                          indent: 56,
-                          color: AppColors.outlineVariant),
-                  ],
-                ],
-              ),
+        child: navAsync.when(
+          data: (nav) => _SidebarBody(
+            nav: nav,
+            primary: primary,
+            logoUrl: logoUrl,
+            openGroups: _openGroups,
+            onToggleGroup: (label) {
+              setState(() {
+                _openGroups[label] = !(_openGroups[label] ?? false);
+              });
+            },
+          ),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              'Failed to load menu.\n$e',
+              style: const TextStyle(color: Colors.white70),
             ),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(AppRadius.large),
-                border: Border.all(color: AppColors.outlineVariant),
-              ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.settings_outlined,
-                        color: AppColors.onSurfaceVariant),
-                    title: Text('Settings', style: AppTypography.bodyMd),
-                    trailing: const Icon(Icons.chevron_right,
-                        color: AppColors.onSurfaceVariant),
-                    onTap: () {},
-                  ),
-                  const Divider(
-                      height: 1,
-                      indent: 56,
-                      color: AppColors.outlineVariant),
-                  ListTile(
-                    leading: const Icon(Icons.help_outline,
-                        color: AppColors.onSurfaceVariant),
-                    title: Text('Help & Support', style: AppTypography.bodyMd),
-                    trailing: const Icon(Icons.chevron_right,
-                        color: AppColors.onSurfaceVariant),
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ref.read(authControllerProvider.notifier).signOut();
-                context.go(AppRoute.login.path);
-              },
-              icon: const Icon(Icons.logout, color: AppColors.error),
-              label: Text('Sign out',
-                  style:
-                      AppTypography.bodyMd.copyWith(color: AppColors.error)),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                side: const BorderSide(color: AppColors.error),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Profile card at the top of the drawer.
-///
-/// Falls back to the cached [User] (name + role from login) immediately
-/// for snappy first paint, then upgrades to the full [AdminUser] (with email,
-/// phone, avatar) once `/auth/me` resolves.
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.session, required this.ref});
-  final User session;
-  final WidgetRef ref;
+/// The actual sidebar contents. Split out so the AsyncValue-loading wrapper
+/// in [_AppDrawerState] stays small and the body widget can take the nav
+/// and theme tokens as plain inputs.
+class _SidebarBody extends ConsumerWidget {
+  const _SidebarBody({
+    required this.nav,
+    required this.primary,
+    required this.logoUrl,
+    required this.openGroups,
+    required this.onToggleGroup,
+  });
+
+  final LiveNav nav;
+  final Color primary;
+  final String? logoUrl;
+  final Map<String, bool> openGroups;
+  final ValueChanged<String> onToggleGroup;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentRoute = GoRouterState.of(context).matchedLocation;
+    final asyncUser = ref.watch(currentUserProvider);
+    final session = ref.watch(authControllerProvider);
+    final user = asyncUser.value;
+    final name = user?.name ?? session?.name ?? '';
+    final email = user?.email ?? '';
+
+    return Column(
+      children: [
+        _Header(logoUrl: logoUrl),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            children: [
+              for (final group in nav.groups)
+                _NavGroup(
+                  group: group,
+                  currentRoute: currentRoute,
+                  isOpen: openGroups[group.label] ??
+                      _isGroupActive(group, currentRoute),
+                  onToggle: () => onToggleGroup(group.label),
+                ),
+            ],
+          ),
+        ),
+        _Footer(name: name, email: email),
+      ],
+    );
+  }
+
+  static bool _isGroupActive(LiveNavGroup g, String currentRoute) {
+    if (g.isLeaf) return false;
+    return g.items.any(
+      (i) =>
+          i.mobileRoute != null &&
+          (currentRoute == i.mobileRoute ||
+              currentRoute.startsWith('${i.mobileRoute}/')),
+    );
+  }
+}
+
+/// Logo strip pinned to the top of the sidebar. Mirrors the web sidebar's
+/// centered logo block. Falls back to the wordmark in [_BrandFallback]
+/// when the live theme has no `site_logo` (e.g., before first fetch).
+class _Header extends StatelessWidget {
+  const _Header({required this.logoUrl});
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
-    final asyncUser = ref.watch(currentUserProvider);
-    final user = asyncUser.value;
-
-    final name = user?.name.isNotEmpty == true ? user!.name : session.name;
-    final role = (user?.role ?? session.role).toUpperCase();
-    final email = user?.email;
-    final initials = _initials(name);
-
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.primaryContainer,
-        borderRadius: BorderRadius.circular(AppRadius.large),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.white24, width: 1)),
       ),
-      child: Row(
+      child: Center(
+        child: SizedBox(
+          height: 40,
+          child: (logoUrl != null && logoUrl!.isNotEmpty)
+              ? Image.network(
+                  logoUrl!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const _BrandFallback(),
+                )
+              : const _BrandFallback(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bundled logo used until/unless the live theme provides a `site_logo` URL,
+/// or when that URL fails to load (offline first launch, broken CDN entry).
+/// `assets/branding/akhiyan_logo.png` is already registered in pubspec.yaml.
+class _BrandFallback extends StatelessWidget {
+  const _BrandFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/branding/akhiyan_logo.png',
+      fit: BoxFit.contain,
+      // If the asset is somehow missing too, fall back to a wordmark — this
+      // path should never trigger in production but keeps the drawer from
+      // showing a broken-image icon if something goes wrong with bundling.
+      errorBuilder: (_, _, _) => const Text(
+        'AKHIYAN',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 2,
+        ),
+      ),
+    );
+  }
+}
+
+/// One nav group — either a flat top-level link (`isLeaf`) or a
+/// collapsible parent with child leaves underneath.
+class _NavGroup extends StatelessWidget {
+  const _NavGroup({
+    required this.group,
+    required this.currentRoute,
+    required this.isOpen,
+    required this.onToggle,
+  });
+
+  final LiveNavGroup group;
+  final String currentRoute;
+  final bool isOpen;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    if (group.isLeaf) {
+      final route = group.mobileRoute;
+      final isActive =
+          route != null && _routeMatches(currentRoute, route);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: _NavTile(
+          icon: navIconFor(group.icon),
+          label: group.label,
+          isActive: isActive,
+          enabled: group.enabled,
+          onTap: () => _navigate(context, route, group.label),
+        ),
+      );
+    }
+
+    final groupActive = group.items.any(
+      (i) =>
+          i.mobileRoute != null && _routeMatches(currentRoute, i.mobileRoute!),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: AppColors.primaryFixed,
-            backgroundImage: (user?.avatar != null && user!.avatar!.isNotEmpty)
-                ? NetworkImage(user.avatar!)
-                : null,
-            child: (user?.avatar == null || user!.avatar!.isEmpty)
-                ? Text(
-                    initials,
-                    style: AppTypography.h3.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                    ),
-                  )
-                : null,
+          _NavTile(
+            icon: navIconFor(group.icon),
+            label: group.label,
+            isActive: groupActive,
+            enabled: true,
+            trailing: Icon(
+              isOpen ? Icons.expand_more : Icons.chevron_right,
+              size: 18,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+            onTap: onToggle,
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTypography.h3.copyWith(
-                    fontSize: 16,
-                    color: AppColors.onPrimaryContainer,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (email != null && email.isNotEmpty)
-                  Text(
-                    email,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.onPrimaryContainer,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryFixed,
-                      borderRadius: BorderRadius.circular(AppRadius.small),
-                    ),
-                    child: Text(
-                      role,
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
-                        fontSize: 10,
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: ClipRect(
+              child: !isOpen
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 2),
+                      child: Column(
+                        children: [
+                          for (final item in group.items)
+                            _NavTile(
+                              icon: navIconFor(item.icon),
+                              label: item.label,
+                              isActive: item.mobileRoute != null &&
+                                  _routeMatches(
+                                      currentRoute, item.mobileRoute!),
+                              enabled: item.enabled,
+                              dense: true,
+                              onTap: () => _navigate(
+                                  context, item.mobileRoute, item.label),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-              ],
             ),
           ),
-          if (asyncUser.isLoading)
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
         ],
       ),
     );
   }
 
-  static String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
+  static bool _routeMatches(String current, String target) =>
+      current == target || current.startsWith('$target/');
+
+  static void _navigate(BuildContext context, String? route, String label) {
+    Navigator.of(context).pop();
+    if (route == null || route.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"$label" coming soon to mobile.'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    context.go(route);
+  }
+}
+
+/// A single sidebar row. Reused for both top-level entries and nested
+/// children (`dense` shrinks the row + icon for the nested case).
+class _NavTile extends StatelessWidget {
+  const _NavTile({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.enabled,
+    required this.onTap,
+    this.dense = false,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final bool enabled;
+  final bool dense;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color fg = !enabled
+        ? Colors.white.withValues(alpha: 0.35)
+        : isActive
+            ? Colors.white
+            : Colors.white.withValues(alpha: 0.78);
+    final Color? bg = isActive ? Colors.white.withValues(alpha: 0.18) : null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: dense ? 9 : 11,
+          ),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: dense ? 16 : 18, color: fg),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: dense ? 13 : 14,
+                    fontWeight:
+                        isActive ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Footer with current user + sign-out. Sign-out lives here because the
+/// mobile shell has no top-bar to host it (unlike the web admin).
+class _Footer extends ConsumerWidget {
+  const _Footer({required this.name, required this.email});
+  final String name;
+  final String email;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.white24, width: 1)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.white.withValues(alpha: 0.22),
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (name.isNotEmpty)
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (email.isNotEmpty)
+                  Text(
+                    email,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Sign out',
+            icon: Icon(Icons.logout,
+                color: Colors.white.withValues(alpha: 0.85), size: 20),
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(authControllerProvider.notifier).signOut();
+              context.go(AppRoute.login.path);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/colors.dart';
-import '../theme/spacing.dart';
-import '../theme/typography.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
 
 /// One of the 4 KPI cards on the dashboard (Today's Orders, Revenue, Pending,
 /// Low Stock). Matches `dashboard_1/code.html` — left accent stripe is

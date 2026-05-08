@@ -3,16 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../api/akhiyan_api.dart' as api;
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/notification_bell.dart';
-import '../../../core/errors/error_mapper.dart';
-import '../../../core/widgets/states/states.dart';
-import '../domain/product.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
+import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
+import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
+import 'package:akhiyan_admin/src/core/widgets/states/states.dart';
+import 'package:akhiyan_admin/src/features/products/domain/product.dart';
 
 /// Combined Add/Edit product form. Wired to `/products` via
 /// [akhiyanApiProvider]: GET on edit-mode init, POST on Publish/Save Draft,
@@ -519,7 +519,7 @@ class _ImagesSection extends StatelessWidget {
                 style: AppTypography.caption.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
+                  letterSpacing: 1,
                   fontSize: 11,
                 ),
               ),
@@ -882,14 +882,12 @@ class _LookupDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return itemsAsync.when(
       loading: () => DropdownButtonFormField<String>(
-        initialValue: null,
         isExpanded: true,
         decoration: _inputDecoration(hint: 'Loading...'),
         items: const [],
         onChanged: null,
       ),
       error: (_, _) => DropdownButtonFormField<String>(
-        initialValue: null,
         isExpanded: true,
         decoration: _inputDecoration(hint: 'Failed to load'),
         items: const [],
@@ -1289,7 +1287,6 @@ class _ActionBar extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              flex: 1,
               child: OutlinedButton(
                 onPressed: saving ? null : (isEdit ? onDelete : onSaveDraft),
                 style: OutlinedButton.styleFrom(

@@ -29,6 +29,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:akhiyan_admin/src/core/api/secure_token_storage.dart' show SecureTokenStorage;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 
@@ -37,6 +38,8 @@ import 'package:http/http.dart' as http;
 // =============================================================================
 
 class ApiException implements Exception {
+
+  ApiException(this.statusCode, this.message, [this.details, this.raw]);
   final int statusCode;
   final String message;
   final Map<String, dynamic>? details;
@@ -47,8 +50,6 @@ class ApiException implements Exception {
   /// `details` map can't represent it. UIs that want a verbatim dump
   /// (developer-facing error dialogs) can read this directly.
   final Map<String, dynamic>? raw;
-
-  ApiException(this.statusCode, this.message, [this.details, this.raw]);
 
   bool get isUnauthorized => statusCode == 401;
   bool get isForbidden => statusCode == 403;
@@ -61,8 +62,8 @@ class ApiException implements Exception {
 }
 
 class NetworkException implements Exception {
-  final String message;
   NetworkException(this.message);
+  final String message;
   @override
   String toString() => 'NetworkException: $message';
 }
@@ -101,10 +102,6 @@ class InMemoryTokenStorage implements TokenStorage {
 // =============================================================================
 
 class Pagination {
-  final int page;
-  final int pageSize;
-  final int total;
-  final int totalPages;
 
   Pagination({required this.page, required this.pageSize, required this.total, required this.totalPages});
 
@@ -116,6 +113,10 @@ class Pagination {
         (pageSize > 0 ? ((total + pageSize - 1) ~/ pageSize) : 1)) as int;
     return Pagination(page: page, pageSize: pageSize, total: total, totalPages: totalPages);
   }
+  final int page;
+  final int pageSize;
+  final int total;
+  final int totalPages;
 }
 
 // Parses paginated payloads in either Flutter envelope shape
@@ -127,10 +128,10 @@ Pagination _paginationFrom(Map<String, dynamic> res) {
 }
 
 class PaginatedResponse<T> {
-  final List<T> data;
-  final Pagination pagination;
 
   PaginatedResponse({required this.data, required this.pagination});
+  final List<T> data;
+  final Pagination pagination;
 }
 
 // =============================================================================
@@ -138,13 +139,6 @@ class PaginatedResponse<T> {
 // =============================================================================
 
 class AdminUser {
-  final String id;
-  final String name;
-  final String? email;
-  final String? phone;
-  final String role;
-  final String? avatar;
-  final DateTime? createdAt;
 
   AdminUser({
     required this.id,
@@ -156,9 +150,6 @@ class AdminUser {
     this.createdAt,
   });
 
-  bool get isAdmin => role == 'admin';
-  bool get isStaff => role == 'staff';
-
   factory AdminUser.fromJson(Map<String, dynamic> json) => AdminUser(
         id: json['id'].toString(),
         name: (json['name'] ?? '') as String,
@@ -168,11 +159,19 @@ class AdminUser {
         avatar: json['avatar'] as String?,
         createdAt: _parseDate(json['createdAt']),
       );
+  final String id;
+  final String name;
+  final String? email;
+  final String? phone;
+  final String role;
+  final String? avatar;
+  final DateTime? createdAt;
+
+  bool get isAdmin => role == 'admin';
+  bool get isStaff => role == 'staff';
 }
 
 class LoginResult {
-  final String accessToken;
-  final AdminUser user;
 
   LoginResult({
     required this.accessToken,
@@ -183,21 +182,11 @@ class LoginResult {
         accessToken: json['token'] as String? ?? 'session',
         user: AdminUser.fromJson(json['user'] as Map<String, dynamic>),
       );
+  final String accessToken;
+  final AdminUser user;
 }
 
 class OrderListItem {
-  final String id;
-  final String customerName;
-  final String? customerPhone;
-  final double total;
-  final String status;
-  final String paymentMethod;
-  final String? paymentStatus;
-  final int? riskScore;
-  final bool courierSent;
-  final int itemCount;
-  final bool flagged;
-  final DateTime? createdAt;
 
   OrderListItem({
     required this.id,
@@ -241,6 +230,18 @@ class OrderListItem {
       createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
     );
   }
+  final String id;
+  final String customerName;
+  final String? customerPhone;
+  final double total;
+  final String status;
+  final String paymentMethod;
+  final String? paymentStatus;
+  final int? riskScore;
+  final bool courierSent;
+  final int itemCount;
+  final bool flagged;
+  final DateTime? createdAt;
 }
 
 /// Filter option for the orders list. Keys are stable backend slugs
@@ -248,6 +249,13 @@ class OrderListItem {
 /// hex `color` lets the backend customize chip / badge tint per
 /// status without a Flutter release.
 class OrderStatusOption {
+
+  factory OrderStatusOption.fromJson(Map<String, dynamic> json) =>
+      OrderStatusOption(
+        key: (json['key'] ?? '').toString(),
+        label: (json['label'] ?? json['key'] ?? '').toString(),
+        color: json['color'] as String?,
+      );
   const OrderStatusOption({
     required this.key,
     required this.label,
@@ -257,24 +265,9 @@ class OrderStatusOption {
   final String key;
   final String label;
   final String? color;
-
-  factory OrderStatusOption.fromJson(Map<String, dynamic> json) =>
-      OrderStatusOption(
-        key: (json['key'] ?? '').toString(),
-        label: (json['label'] ?? json['key'] ?? '').toString(),
-        color: json['color'] as String?,
-      );
 }
 
 class OrderItem {
-  final String id;
-  final String orderId;
-  final String? productId;
-  final String productName;
-  final String? variantId;
-  final String? variantLabel;
-  final int quantity;
-  final double price;
 
   OrderItem({
     required this.id,
@@ -297,35 +290,17 @@ class OrderItem {
         quantity: (json['quantity'] as int?) ?? 0,
         price: ((json['price'] as num?) ?? 0).toDouble(),
       );
+  final String id;
+  final String orderId;
+  final String? productId;
+  final String productName;
+  final String? variantId;
+  final String? variantLabel;
+  final int quantity;
+  final double price;
 }
 
 class Order {
-  final String id;
-  final String? userId;
-  final String customerName;
-  final String customerPhone;
-  final String? customerEmail;
-  final String customerAddress;
-  final String? city;
-  final String? zipCode;
-  final double subtotal;
-  final double shippingCost;
-  final double discount;
-  final double total;
-  final String status;
-  final String paymentMethod;
-  final String paymentStatus;
-  final String? transactionId;
-  final String? notes;
-  final bool courierSent;
-  final String? courierType;
-  final String? consignmentId;
-  final String? courierStatus;
-  final int? riskScore;
-  final bool flagged;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-  final List<OrderItem> items;
 
   Order({
     required this.id,
@@ -387,34 +362,35 @@ class Order {
             .map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+  final String id;
+  final String? userId;
+  final String customerName;
+  final String customerPhone;
+  final String? customerEmail;
+  final String customerAddress;
+  final String? city;
+  final String? zipCode;
+  final double subtotal;
+  final double shippingCost;
+  final double discount;
+  final double total;
+  final String status;
+  final String paymentMethod;
+  final String paymentStatus;
+  final String? transactionId;
+  final String? notes;
+  final bool courierSent;
+  final String? courierType;
+  final String? consignmentId;
+  final String? courierStatus;
+  final int? riskScore;
+  final bool flagged;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final List<OrderItem> items;
 }
 
 class Product {
-  final String id;
-  final String name;
-  final String slug;
-  final String? categoryId;
-  final String? brandId;
-  final String? description;
-  final double price;
-  final double? originalPrice;
-  final String image;
-  final String? images;
-  final String? badge;
-  final String? weight;
-  final int stock;
-  final bool? unlimitedStock;
-  final int soldCount;
-  final bool isActive;
-  final bool isFeatured;
-  final bool? hasVariations;
-  final String? variationType;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-  // Optional joined models
-  final Map<String, dynamic>? category;
-  final Map<String, dynamic>? brand;
-  final List<ProductVariant>? variants;
 
   Product({
     required this.id,
@@ -481,20 +457,34 @@ class Product {
           .toList(),
     );
   }
+  final String id;
+  final String name;
+  final String slug;
+  final String? categoryId;
+  final String? brandId;
+  final String? description;
+  final double price;
+  final double? originalPrice;
+  final String image;
+  final String? images;
+  final String? badge;
+  final String? weight;
+  final int stock;
+  final bool? unlimitedStock;
+  final int soldCount;
+  final bool isActive;
+  final bool isFeatured;
+  final bool? hasVariations;
+  final String? variationType;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  // Optional joined models
+  final Map<String, dynamic>? category;
+  final Map<String, dynamic>? brand;
+  final List<ProductVariant>? variants;
 }
 
 class ProductVariant {
-  final String id;
-  final String productId;
-  final String label;
-  final double price;
-  final double? originalPrice;
-  final String? sku;
-  final int stock;
-  final bool? unlimitedStock;
-  final String? image;
-  final int sortOrder;
-  final bool isActive;
 
   ProductVariant({
     required this.id,
@@ -526,17 +516,20 @@ class ProductVariant {
       isActive: (json['isActive'] as bool?) ?? true,
     );
   }
+  final String id;
+  final String productId;
+  final String label;
+  final double price;
+  final double? originalPrice;
+  final String? sku;
+  final int stock;
+  final bool? unlimitedStock;
+  final String? image;
+  final int sortOrder;
+  final bool isActive;
 }
 
 class Category {
-  final String id;
-  final String name;
-  final String slug;
-  final String? image;
-  final String? description;
-  final int sortOrder;
-  final bool isActive;
-  final int productsCount;
 
   Category({
     required this.id,
@@ -560,15 +553,17 @@ class Category {
         productsCount:
             (json['productsCount'] ?? json['products_count'] ?? 0) as int,
       );
-}
-
-class Brand {
   final String id;
   final String name;
   final String slug;
-  final String? logo;
+  final String? image;
+  final String? description;
+  final int sortOrder;
   final bool isActive;
   final int productsCount;
+}
+
+class Brand {
 
   Brand({
     required this.id,
@@ -588,17 +583,15 @@ class Brand {
         productsCount:
             (json['productsCount'] ?? json['products_count'] ?? 0) as int,
       );
+  final String id;
+  final String name;
+  final String slug;
+  final String? logo;
+  final bool isActive;
+  final int productsCount;
 }
 
 class CustomerListItem {
-  final String id;
-  final String name;
-  final String? email;
-  final String? phone;
-  final String? avatar;
-  final DateTime? createdAt;
-  final int ordersCount;
-  final double totalSpent;
 
   CustomerListItem({
     required this.id,
@@ -630,12 +623,17 @@ class CustomerListItem {
       totalSpent: ((json['totalSpent'] as num?) ?? 0).toDouble(),
     );
   }
+  final String id;
+  final String name;
+  final String? email;
+  final String? phone;
+  final String? avatar;
+  final DateTime? createdAt;
+  final int ordersCount;
+  final double totalSpent;
 }
 
 class CustomerStats {
-  final int ordersCount;
-  final double totalSpent;
-  final DateTime? lastOrderAt;
 
   CustomerStats({required this.ordersCount, required this.totalSpent, this.lastOrderAt});
 
@@ -644,18 +642,12 @@ class CustomerStats {
         totalSpent: ((json['totalSpent'] as num?) ?? 0).toDouble(),
         lastOrderAt: _parseDate(json['lastOrderAt']),
       );
+  final int ordersCount;
+  final double totalSpent;
+  final DateTime? lastOrderAt;
 }
 
 class CustomerDetail {
-  final String id;
-  final String name;
-  final String? email;
-  final String? phone;
-  final String? address;
-  final String? avatar;
-  final DateTime? createdAt;
-  final CustomerStats stats;
-  final List<OrderListItem> orders;
 
   CustomerDetail({
     required this.id,
@@ -682,20 +674,18 @@ class CustomerDetail {
             .map((e) => OrderListItem.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+  final String id;
+  final String name;
+  final String? email;
+  final String? phone;
+  final String? address;
+  final String? avatar;
+  final DateTime? createdAt;
+  final CustomerStats stats;
+  final List<OrderListItem> orders;
 }
 
 class Coupon {
-  final String id;
-  final String code;
-  final String type; // percentage | fixed
-  final double value;
-  final double minOrderAmount;
-  final int? maxUses;
-  final int usedCount;
-  final DateTime? startsAt;
-  final DateTime? expiresAt;
-  final bool isActive;
-  final DateTime? createdAt;
 
   Coupon({
     required this.id,
@@ -711,8 +701,6 @@ class Coupon {
     this.createdAt,
   });
 
-  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
-
   factory Coupon.fromJson(Map<String, dynamic> json) => Coupon(
         id: (json['id'] ?? '').toString(),
         code: (json['code'] as String?) ?? '',
@@ -726,17 +714,22 @@ class Coupon {
         isActive: (json['isActive'] as bool?) ?? true,
         createdAt: _parseDate(json['createdAt']),
       );
+  final String id;
+  final String code;
+  final String type; // percentage | fixed
+  final double value;
+  final double minOrderAmount;
+  final int? maxUses;
+  final int usedCount;
+  final DateTime? startsAt;
+  final DateTime? expiresAt;
+  final bool isActive;
+  final DateTime? createdAt;
+
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 }
 
 class FlashSale {
-  final String id;
-  final String title;
-  final DateTime startsAt;
-  final DateTime endsAt;
-  final bool isActive;
-  final int productCount;
-  final String state; // live | scheduled | ended | inactive
-  final DateTime? createdAt;
 
   FlashSale({
     required this.id,
@@ -759,17 +752,17 @@ class FlashSale {
         state: (json['state'] as String?) ?? 'inactive',
         createdAt: _parseDate(json['createdAt']),
       );
+  final String id;
+  final String title;
+  final DateTime startsAt;
+  final DateTime endsAt;
+  final bool isActive;
+  final int productCount;
+  final String state; // live | scheduled | ended | inactive
+  final DateTime? createdAt;
 }
 
 class Shortlink {
-  final String id;
-  final String slug;
-  final String targetUrl;
-  final int hits;
-  final bool isActive;
-  final DateTime? createdAt;
-  final int sevenDayClicks;
-  final List<int> sparkline;
 
   Shortlink({
     required this.id,
@@ -792,21 +785,17 @@ class Shortlink {
         sevenDayClicks: json['sevenDayClicks'] as int? ?? 0,
         sparkline: ((json['sparkline'] as List?) ?? []).map((e) => e as int).toList(),
       );
+  final String id;
+  final String slug;
+  final String targetUrl;
+  final int hits;
+  final bool isActive;
+  final DateTime? createdAt;
+  final int sevenDayClicks;
+  final List<int> sparkline;
 }
 
 class AdminBanner {
-  final String id;
-  final String title;
-  final String? subtitle;
-  final String? description;
-  final String? buttonText;
-  final String? buttonUrl;
-  final String? image;
-  final String? gradient;
-  final String? emoji;
-  final String position;
-  final int sortOrder;
-  final bool isActive;
 
   AdminBanner({
     required this.id,
@@ -837,13 +826,21 @@ class AdminBanner {
         sortOrder: json['sortOrder'] as int? ?? 0,
         isActive: json['isActive'] as bool? ?? true,
       );
+  final String id;
+  final String title;
+  final String? subtitle;
+  final String? description;
+  final String? buttonText;
+  final String? buttonUrl;
+  final String? image;
+  final String? gradient;
+  final String? emoji;
+  final String position;
+  final int sortOrder;
+  final bool isActive;
 }
 
 class BlockedIp {
-  final String id;
-  final String ipAddress;
-  final String? reason;
-  final DateTime? createdAt;
 
   BlockedIp({required this.id, required this.ipAddress, this.reason, this.createdAt});
 
@@ -853,17 +850,13 @@ class BlockedIp {
         reason: json['reason'] as String?,
         createdAt: _parseDate(json['createdAt']),
       );
+  final String id;
+  final String ipAddress;
+  final String? reason;
+  final DateTime? createdAt;
 }
 
 class BlockedDevice {
-  final String id;
-  final String fpHash;
-  final String? lastIp;
-  final String? platform;
-  final String? blockReason;
-  final DateTime? blockedAt;
-  final int seenCount;
-  final int riskScore;
 
   BlockedDevice({
     required this.id,
@@ -886,19 +879,17 @@ class BlockedDevice {
         seenCount: json['seenCount'] as int? ?? 0,
         riskScore: json['riskScore'] as int? ?? 0,
       );
+  final String id;
+  final String fpHash;
+  final String? lastIp;
+  final String? platform;
+  final String? blockReason;
+  final DateTime? blockedAt;
+  final int seenCount;
+  final int riskScore;
 }
 
 class FlaggedOrder {
-  final String id;
-  final String customerName;
-  final String customerPhone;
-  final double total;
-  final String status;
-  final int? riskScore;
-  final String? ip;
-  final int? fpSeenCount;
-  final String reason;
-  final DateTime? createdAt;
 
   FlaggedOrder({
     required this.id,
@@ -925,16 +916,19 @@ class FlaggedOrder {
         reason: json['reason'] as String,
         createdAt: _parseDate(json['createdAt']),
       );
+  final String id;
+  final String customerName;
+  final String customerPhone;
+  final double total;
+  final String status;
+  final int? riskScore;
+  final String? ip;
+  final int? fpSeenCount;
+  final String reason;
+  final DateTime? createdAt;
 }
 
 class StaffMember {
-  final String id;
-  final String name;
-  final String? email;
-  final String? phone;
-  final String role;
-  final String? avatar;
-  final DateTime? createdAt;
 
   StaffMember({
     required this.id,
@@ -955,20 +949,16 @@ class StaffMember {
         avatar: json['avatar'] as String?,
         createdAt: _parseDate(json['createdAt']),
       );
+  final String id;
+  final String name;
+  final String? email;
+  final String? phone;
+  final String role;
+  final String? avatar;
+  final DateTime? createdAt;
 }
 
 class InventoryItem {
-  final String id;
-  final String name;
-  final String slug;
-  final String image;
-  final int stock;
-  final bool? unlimitedStock;
-  final int soldCount;
-  final double price;
-  final bool? hasVariations;
-  final String level; // unlimited | critical | low | ok
-  final List<ProductVariant> variants;
 
   InventoryItem({
     required this.id,
@@ -999,42 +989,49 @@ class InventoryItem {
             .map((e) => ProductVariant.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+  final String id;
+  final String name;
+  final String slug;
+  final String image;
+  final int stock;
+  final bool? unlimitedStock;
+  final int soldCount;
+  final double price;
+  final bool? hasVariations;
+  final String level; // unlimited | critical | low | ok
+  final List<ProductVariant> variants;
 }
 
 class InventorySummary {
-  final int criticalCount;
-  final int lowThreshold;
   InventorySummary({required this.criticalCount, required this.lowThreshold});
   factory InventorySummary.fromJson(Map<String, dynamic> json) => InventorySummary(
         criticalCount: json['criticalCount'] as int,
         lowThreshold: json['lowThreshold'] as int,
       );
+  final int criticalCount;
+  final int lowThreshold;
 }
 
 class InventoryResult {
+  InventoryResult({required this.data, required this.pagination, required this.summary});
   final List<InventoryItem> data;
   final Pagination pagination;
   final InventorySummary summary;
-  InventoryResult({required this.data, required this.pagination, required this.summary});
 }
 
 // --- Dashboard ---
 
 class StatCard {
-  final num value;
-  final int? deltaPct;
   StatCard({required this.value, this.deltaPct});
   factory StatCard.fromJson(Map<String, dynamic> json) => StatCard(
         value: json['value'] as num,
         deltaPct: json['deltaPct'] as int?,
       );
+  final num value;
+  final int? deltaPct;
 }
 
 class DashboardCards {
-  final StatCard todayOrders;
-  final StatCard todayRevenue;
-  final StatCard pendingOrders;
-  final StatCard lowStockItems;
 
   DashboardCards({
     required this.todayOrders,
@@ -1049,15 +1046,13 @@ class DashboardCards {
         pendingOrders: StatCard.fromJson(json['pendingOrders'] as Map<String, dynamic>),
         lowStockItems: StatCard.fromJson(json['lowStockItems'] as Map<String, dynamic>),
       );
+  final StatCard todayOrders;
+  final StatCard todayRevenue;
+  final StatCard pendingOrders;
+  final StatCard lowStockItems;
 }
 
 class TopProductSummary {
-  final String id;
-  final String name;
-  final String slug;
-  final String image;
-  final int soldCount;
-  final double price;
 
   TopProductSummary({
     required this.id,
@@ -1076,13 +1071,15 @@ class TopProductSummary {
         soldCount: ((json['soldCount'] ?? json['sold_count']) as int?) ?? 0,
         price: ((json['price'] as num?) ?? 0).toDouble(),
       );
+  final String id;
+  final String name;
+  final String slug;
+  final String image;
+  final int soldCount;
+  final double price;
 }
 
 class DashboardData {
-  final DashboardCards cards;
-  final int flaggedOrdersCount;
-  final List<OrderListItem> recentOrders;
-  final List<TopProductSummary> topProducts;
 
   DashboardData({
     required this.cards,
@@ -1130,15 +1127,15 @@ class DashboardData {
           .toList(),
     );
   }
+  final DashboardCards cards;
+  final int flaggedOrdersCount;
+  final List<OrderListItem> recentOrders;
+  final List<TopProductSummary> topProducts;
 }
 
 // --- Analytics ---
 
 class AnalyticsStats {
-  final int orders;
-  final double revenue;
-  final double avgOrderValue;
-  final double returnRate;
 
   AnalyticsStats({
     required this.orders,
@@ -1153,27 +1150,25 @@ class AnalyticsStats {
         avgOrderValue: (json['avgOrderValue'] as num).toDouble(),
         returnRate: (json['returnRate'] as num).toDouble(),
       );
+  final int orders;
+  final double revenue;
+  final double avgOrderValue;
+  final double returnRate;
 }
 
 class RevenuePoint {
-  final String date;
-  final double revenue;
-  final int orders;
   RevenuePoint({required this.date, required this.revenue, required this.orders});
   factory RevenuePoint.fromJson(Map<String, dynamic> json) => RevenuePoint(
         date: json['date'] as String,
         revenue: (json['revenue'] as num).toDouble(),
         orders: json['orders'] as int,
       );
+  final String date;
+  final double revenue;
+  final int orders;
 }
 
 class TopProductAnalytics {
-  final String? productId;
-  final String name;
-  final String? image;
-  final String? slug;
-  final int unitsSold;
-  final double revenue;
 
   TopProductAnalytics({
     this.productId,
@@ -1192,25 +1187,23 @@ class TopProductAnalytics {
         unitsSold: json['unitsSold'] as int,
         revenue: (json['revenue'] as num).toDouble(),
       );
+  final String? productId;
+  final String name;
+  final String? image;
+  final String? slug;
+  final int unitsSold;
+  final double revenue;
 }
 
 class TrafficSource {
-  final String source;
-  final int clicks;
   TrafficSource({required this.source, required this.clicks});
   factory TrafficSource.fromJson(Map<String, dynamic> json) =>
       TrafficSource(source: json['source'] as String, clicks: json['clicks'] as int);
+  final String source;
+  final int clicks;
 }
 
 class AnalyticsData {
-  final String period;
-  final DateTime from;
-  final DateTime to;
-  final AnalyticsStats stats;
-  final List<RevenuePoint> revenueChart;
-  final List<TopProductAnalytics> topProducts;
-  final Map<String, int> statusBreakdown;
-  final List<TrafficSource> trafficSources;
 
   AnalyticsData({
     required this.period,
@@ -1242,6 +1235,14 @@ class AnalyticsData {
           .toList(),
     );
   }
+  final String period;
+  final DateTime from;
+  final DateTime to;
+  final AnalyticsStats stats;
+  final List<RevenuePoint> revenueChart;
+  final List<TopProductAnalytics> topProducts;
+  final Map<String, int> statusBreakdown;
+  final List<TrafficSource> trafficSources;
 }
 
 // =============================================================================
@@ -1249,6 +1250,31 @@ class AnalyticsData {
 // =============================================================================
 
 class AkhiyanApi {
+
+  AkhiyanApi({
+    required this.baseUrl,
+    TokenStorage? storage,
+    http.Client? httpClient,
+    this.onAuthExpired,
+  })  : _storage = storage ?? InMemoryTokenStorage(),
+        _http = httpClient ?? http.Client() {
+    auth = AuthApi(this);
+    dashboard = DashboardApi(this);
+    orders = OrdersApi(this);
+    products = ProductsApi(this);
+    categories = CategoriesApi(this);
+    brands = BrandsApi(this);
+    customers = CustomersApi(this);
+    inventory = InventoryApi(this);
+    coupons = CouponsApi(this);
+    flashSales = FlashSalesApi(this);
+    shortlinks = ShortlinksApi(this);
+    analytics = AnalyticsApi(this);
+    banners = BannersApi(this);
+    fraud = FraudApi(this);
+    staff = StaffApi(this);
+    media = MediaApi(this);
+  }
   final String baseUrl;
   final TokenStorage _storage;
   final http.Client _http;
@@ -1279,31 +1305,6 @@ class AkhiyanApi {
   late final FraudApi fraud;
   late final StaffApi staff;
   late final MediaApi media;
-
-  AkhiyanApi({
-    required this.baseUrl,
-    TokenStorage? storage,
-    http.Client? httpClient,
-    this.onAuthExpired,
-  })  : _storage = storage ?? InMemoryTokenStorage(),
-        _http = httpClient ?? http.Client() {
-    auth = AuthApi(this);
-    dashboard = DashboardApi(this);
-    orders = OrdersApi(this);
-    products = ProductsApi(this);
-    categories = CategoriesApi(this);
-    brands = BrandsApi(this);
-    customers = CustomersApi(this);
-    inventory = InventoryApi(this);
-    coupons = CouponsApi(this);
-    flashSales = FlashSalesApi(this);
-    shortlinks = ShortlinksApi(this);
-    analytics = AnalyticsApi(this);
-    banners = BannersApi(this);
-    fraud = FraudApi(this);
-    staff = StaffApi(this);
-    media = MediaApi(this);
-  }
 
   TokenStorage get storage => _storage;
 
@@ -1369,25 +1370,20 @@ class AkhiyanApi {
       switch (method) {
         case 'GET':
           res = await _http.get(uri, headers: headers).timeout(httpTimeout);
-          break;
         case 'POST':
           res = await _http
               .post(uri, headers: headers, body: body == null ? null : jsonEncode(body))
               .timeout(httpTimeout);
-          break;
         case 'PATCH':
           res = await _http
               .patch(uri, headers: headers, body: body == null ? null : jsonEncode(body))
               .timeout(httpTimeout);
-          break;
         case 'PUT':
           res = await _http
               .put(uri, headers: headers, body: body == null ? null : jsonEncode(body))
               .timeout(httpTimeout);
-          break;
         case 'DELETE':
           res = await _http.delete(uri, headers: headers).timeout(httpTimeout);
-          break;
         default:
           throw ArgumentError('Unsupported HTTP method: $method');
       }
@@ -1450,8 +1446,8 @@ class AkhiyanApi {
 // =============================================================================
 
 class AuthApi {
-  final AkhiyanApi _api;
   AuthApi(this._api);
+  final AkhiyanApi _api;
 
   Future<AdminUser> login(String email, String password) async {
     final res = await _api.request('POST', '/auth/login', body: {
@@ -1483,8 +1479,8 @@ class AuthApi {
 // =============================================================================
 
 class DashboardApi {
-  final AkhiyanApi _api;
   DashboardApi(this._api);
+  final AkhiyanApi _api;
 
   /// Fetches dashboard data, optionally scoped to a date range.
   ///
@@ -1506,8 +1502,8 @@ class DashboardApi {
 // =============================================================================
 
 class OrdersApi {
-  final AkhiyanApi _api;
   OrdersApi(this._api);
+  final AkhiyanApi _api;
 
   Future<PaginatedResponse<OrderListItem>> list({
     String? q,
@@ -1519,7 +1515,7 @@ class OrdersApi {
     final res = await _api.request('GET', '/orders', query: {
       if (q != null && q.isNotEmpty) 'q': q,
       if (status != null && status.isNotEmpty) 'status': status,
-      if (flagged == true) 'flagged': 'true',
+      if (flagged ?? false) 'flagged': 'true',
       'page': '$page',
       'pageSize': '$pageSize',
     });
@@ -1585,11 +1581,9 @@ class OrdersApi {
   Future<Order> create({
     required String customerName,
     required String customerPhone,
-    String? customerEmail,
-    required String customerAddress,
+    required String customerAddress, required List<Map<String, dynamic>> items, String? customerEmail,
     String? city,
     String? zipCode,
-    required List<Map<String, dynamic>> items,
     double shippingCost = 0,
     double discount = 0,
     String paymentMethod = 'cod',
@@ -1654,8 +1648,8 @@ class OrdersApi {
 // =============================================================================
 
 class ProductsApi {
-  final AkhiyanApi _api;
   ProductsApi(this._api);
+  final AkhiyanApi _api;
 
   Future<PaginatedResponse<Product>> list({
     String? q,
@@ -1713,8 +1707,8 @@ class ProductsApi {
 // =============================================================================
 
 class CategoriesApi {
-  final AkhiyanApi _api;
   CategoriesApi(this._api);
+  final AkhiyanApi _api;
 
   Future<List<Category>> list() async {
     final res = await _api.request('GET', '/categories', rootBase: true);
@@ -1729,8 +1723,8 @@ class CategoriesApi {
 // =============================================================================
 
 class BrandsApi {
-  final AkhiyanApi _api;
   BrandsApi(this._api);
+  final AkhiyanApi _api;
 
   Future<List<Brand>> list() async {
     final res = await _api.request('GET', '/brands', rootBase: true);
@@ -1745,8 +1739,8 @@ class BrandsApi {
 // =============================================================================
 
 class CustomersApi {
-  final AkhiyanApi _api;
   CustomersApi(this._api);
+  final AkhiyanApi _api;
 
   Future<PaginatedResponse<CustomerListItem>> list({String? q, int page = 1, int pageSize = 20}) async {
     final res = await _api.request('GET', '/customers', query: {
@@ -1771,8 +1765,8 @@ class CustomersApi {
 // =============================================================================
 
 class InventoryApi {
-  final AkhiyanApi _api;
   InventoryApi(this._api);
+  final AkhiyanApi _api;
 
   Future<InventoryResult> list({String? stockFilter, String? q, int page = 1, int pageSize = 50}) async {
     final res = await _api.request('GET', '/inventory', query: {
@@ -1795,8 +1789,8 @@ class InventoryApi {
 // =============================================================================
 
 class CouponsApi {
-  final AkhiyanApi _api;
   CouponsApi(this._api);
+  final AkhiyanApi _api;
 
   Future<List<Coupon>> list({bool? active}) async {
     final res = await _api.request('GET', '/coupons', query: {
@@ -1848,8 +1842,8 @@ class CouponsApi {
 // =============================================================================
 
 class FlashSalesApi {
-  final AkhiyanApi _api;
   FlashSalesApi(this._api);
+  final AkhiyanApi _api;
 
   Future<List<FlashSale>> list() async {
     final res = await _api.request('GET', '/flash-sales');
@@ -1893,8 +1887,8 @@ class FlashSalesApi {
 // =============================================================================
 
 class ShortlinksApi {
-  final AkhiyanApi _api;
   ShortlinksApi(this._api);
+  final AkhiyanApi _api;
 
   Future<List<Shortlink>> list() async {
     final res = await _api.request('GET', '/shortlinks');
@@ -1933,8 +1927,8 @@ class ShortlinksApi {
 // =============================================================================
 
 class AnalyticsApi {
-  final AkhiyanApi _api;
   AnalyticsApi(this._api);
+  final AkhiyanApi _api;
 
   /// `period` is one of: today | 7d | 30d | custom. For `custom`, pass [from] and [to].
   Future<AnalyticsData> fetch({String period = '7d', DateTime? from, DateTime? to}) async {
@@ -1952,8 +1946,8 @@ class AnalyticsApi {
 // =============================================================================
 
 class BannersApi {
-  final AkhiyanApi _api;
   BannersApi(this._api);
+  final AkhiyanApi _api;
 
   Future<List<AdminBanner>> list({String? position}) async {
     final res = await _api.request('GET', '/marketing/banners', query: {
@@ -1982,8 +1976,8 @@ class BannersApi {
 // =============================================================================
 
 class FraudApi {
-  final AkhiyanApi _api;
   FraudApi(this._api);
+  final AkhiyanApi _api;
 
   Future<PaginatedResponse<FlaggedOrder>> flaggedOrders({int page = 1, int pageSize = 20}) async {
     final res = await _api.request('GET', '/fraud/orders', query: {
@@ -2036,8 +2030,8 @@ class FraudApi {
 // =============================================================================
 
 class StaffApi {
-  final AkhiyanApi _api;
   StaffApi(this._api);
+  final AkhiyanApi _api;
 
   Future<List<StaffMember>> list() async {
     final res = await _api.request('GET', '/staff');
@@ -2096,8 +2090,8 @@ class StaffApi {
 /// the form keeps working — users just can't add new images. Once the
 /// backend ships the endpoint, no app changes are needed.
 class MediaApi {
-  final AkhiyanApi _api;
   MediaApi(this._api);
+  final AkhiyanApi _api;
 
   /// Upload bytes from disk and return the hosted URL. Content-Type is
   /// inferred from the filename extension server-side — Flutter's `http`
@@ -2135,7 +2129,7 @@ class MediaApi {
       throw ApiException(401, 'Session expired');
     }
 
-    Map<String, dynamic> json = const {};
+    var json = const <String, dynamic>{};
     if (body.isNotEmpty) {
       try {
         json = jsonDecode(body) as Map<String, dynamic>;

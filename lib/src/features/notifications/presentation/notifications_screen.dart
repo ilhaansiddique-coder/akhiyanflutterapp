@@ -1,12 +1,13 @@
+import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart' show AppShellAppBar;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/notifications/notification_store.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_drawer.dart';
+import 'package:akhiyan_admin/src/core/notifications/notification_store.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_drawer.dart';
 
 /// Live notification panel — wired to [notificationStoreProvider] which is
 /// fed by the SSE stream. Each backend `bumpVersion(channel, notify)` with
@@ -173,7 +174,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'You\'re all caught up',
+              "You're all caught up",
               style: AppTypography.bodyMd.copyWith(
                 fontWeight: FontWeight.w700,
               ),

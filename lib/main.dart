@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'app.dart';
-import 'src/core/widgets/friendly_error_widget.dart';
+import 'package:akhiyan_admin/app.dart';
+import 'package:akhiyan_admin/src/core/widgets/friendly_error_widget.dart';
 
 void main() {
   // Replace Flutter's red ErrorWidget with a friendly card so a build-time

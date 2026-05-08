@@ -1,3 +1,5 @@
+import 'package:akhiyan_admin/src/core/errors/failures.dart' show Failure;
+
 /// Data-layer exception types. These live below the repository boundary
 /// and get caught + mapped to [Failure] subclasses there. Never thrown
 /// across feature boundaries.

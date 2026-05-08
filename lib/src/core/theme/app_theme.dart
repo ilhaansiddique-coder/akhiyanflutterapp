@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'colors.dart';
-import 'spacing.dart';
-import 'typography.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
 
 /// Material 3 theme assembled from Akhiyan design tokens.
 ///
@@ -13,9 +13,8 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get light {
-    final colorScheme = const ColorScheme.light(
+    const colorScheme = ColorScheme.light(
       primary: AppColors.primary,
-      onPrimary: AppColors.onPrimary,
       primaryContainer: AppColors.primaryContainer,
       onPrimaryContainer: AppColors.onPrimaryContainer,
       secondary: AppColors.secondary,
@@ -27,10 +26,8 @@ class AppTheme {
       tertiaryContainer: AppColors.tertiaryContainer,
       onTertiaryContainer: AppColors.onTertiaryContainer,
       error: AppColors.error,
-      onError: AppColors.onError,
       errorContainer: AppColors.errorContainer,
       onErrorContainer: AppColors.onErrorContainer,
-      surface: AppColors.surface,
       onSurface: AppColors.onSurface,
       surfaceContainerLowest: AppColors.surfaceContainerLowest,
       surfaceContainerLow: AppColors.surfaceContainerLow,
@@ -60,7 +57,7 @@ class AppTheme {
         titleTextStyle: AppTypography.h3,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         shape: const Border(
-          bottom: BorderSide(color: AppColors.outlineVariant, width: 1),
+          bottom: BorderSide(color: AppColors.outlineVariant),
         ),
       ),
       cardTheme: CardThemeData(

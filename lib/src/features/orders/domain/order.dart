@@ -1,3 +1,5 @@
+import 'package:akhiyan_admin/src/features/orders/presentation/order_detail_screen.dart' show OrderDetailScreen;
+
 enum OrderStatus { pending, confirmed, processing, shipped, delivered, cancelled }
 
 enum PaymentMethod { bkash, nagad, cod, card }

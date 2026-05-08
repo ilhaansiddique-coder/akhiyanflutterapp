@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'colors.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
 
 /// Typography ported from the Stitch prototype.
 ///
@@ -70,14 +70,14 @@ class AppTypography {
   // Data display (numbers, IDs, currency)
   static TextStyle dataDisplay = GoogleFonts.anekBangla(
     fontSize: 16,
-    height: 1.0,
+    height: 1,
     fontWeight: FontWeight.w500,
     color: AppColors.onSurface,
   );
 
   static TextStyle dataDisplayLg = GoogleFonts.anekBangla(
     fontSize: 32,
-    height: 1.0,
+    height: 1,
     fontWeight: FontWeight.w700,
     color: AppColors.primary,
   );

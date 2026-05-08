@@ -1,7 +1,7 @@
-import '../../../../../api/akhiyan_api.dart' as api;
-import '../../../../core/errors/error_mapper.dart';
-import '../../domain/entities/user.dart';
-import '../../domain/repositories/auth_repository.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
+import 'package:akhiyan_admin/src/features/auth/domain/entities/user.dart';
+import 'package:akhiyan_admin/src/features/auth/domain/repositories/auth_repository.dart';
 
 /// Concrete implementation backed by the existing monolithic [api.AkhiyanApi].
 ///

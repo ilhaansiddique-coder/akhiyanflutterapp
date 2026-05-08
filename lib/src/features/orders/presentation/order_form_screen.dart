@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../api/akhiyan_api.dart' as api;
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/notification_bell.dart';
-import '../../../core/widgets/states/states.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
+import 'package:akhiyan_admin/src/core/widgets/states/states.dart';
 
 /// Manual order entry. Admin captures customer details + line items and
 /// posts to `POST /api/v1/m/orders`. The backend persists, computes the
@@ -64,7 +64,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
   }
 
   double get _subtotal =>
-      _items.fold(0.0, (sum, it) => sum + (it.price * it.quantity));
+      _items.fold(0, (sum, it) => sum + (it.price * it.quantity));
   double get _shippingCost => double.tryParse(_shipping.text) ?? 0;
   double get _discountAmount => double.tryParse(_discount.text) ?? 0;
   double get _total => (_subtotal + _shippingCost - _discountAmount)

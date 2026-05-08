@@ -3,17 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../api/akhiyan_api.dart' as api;
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/notification_bell.dart';
-import '../../../core/widgets/order_status_badge.dart';
-import '../../../core/errors/error_mapper.dart';
-import '../../../core/widgets/states/states.dart';
-import '../domain/order.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
+import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
+import 'package:akhiyan_admin/src/core/widgets/order_status_badge.dart';
+import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
+import 'package:akhiyan_admin/src/core/widgets/states/states.dart';
+import 'package:akhiyan_admin/src/features/orders/domain/order.dart';
 
 /// Live order detail screen. Watches [orderDetailProvider] for the given id,
 /// renders loading / error / data states, and exposes actions (mark paid,

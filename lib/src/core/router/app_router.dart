@@ -2,26 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/auth/domain/entities/user.dart';
-import '../../features/auth/presentation/controllers/auth_controller.dart';
-import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/dashboard/presentation/dashboard_screen.dart';
-import '../../features/marketing/presentation/marketing_screen.dart';
-import '../../features/analytics/presentation/analytics_screen.dart';
-import '../../features/courier/presentation/courier_screen.dart';
-import '../../features/customers/presentation/customer_detail_screen.dart';
-import '../../features/customers/presentation/customers_screen.dart';
-import '../../features/fraud_security/presentation/fraud_security_screen.dart';
-import '../../features/inventory/presentation/inventory_screen.dart';
-import '../../features/notifications/presentation/notifications_screen.dart';
-import '../../features/orders/presentation/order_detail_screen.dart';
-import '../../features/orders/presentation/order_form_screen.dart';
-import '../../features/orders/presentation/orders_screen.dart';
-import '../../features/products/presentation/product_form_screen.dart';
-import '../../features/products/presentation/products_screen.dart';
-import '../../features/shortlinks/presentation/shortlinks_screen.dart';
-import '../../features/staff/presentation/staff_screen.dart';
-import '../widgets/app_shell.dart';
+import 'package:akhiyan_admin/src/features/auth/domain/entities/user.dart';
+import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:akhiyan_admin/src/features/auth/presentation/screens/login_screen.dart';
+import 'package:akhiyan_admin/src/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:akhiyan_admin/src/features/marketing/presentation/marketing_screen.dart';
+import 'package:akhiyan_admin/src/features/analytics/presentation/analytics_screen.dart';
+import 'package:akhiyan_admin/src/features/courier/presentation/courier_screen.dart';
+import 'package:akhiyan_admin/src/features/customers/presentation/customer_detail_screen.dart';
+import 'package:akhiyan_admin/src/features/customers/presentation/customers_screen.dart';
+import 'package:akhiyan_admin/src/features/fraud_security/presentation/fraud_security_screen.dart';
+import 'package:akhiyan_admin/src/features/inventory/presentation/inventory_screen.dart';
+import 'package:akhiyan_admin/src/features/notifications/presentation/notifications_screen.dart';
+import 'package:akhiyan_admin/src/features/orders/presentation/incomplete_orders_screen.dart';
+import 'package:akhiyan_admin/src/features/orders/presentation/order_detail_screen.dart';
+import 'package:akhiyan_admin/src/features/orders/presentation/order_form_screen.dart';
+import 'package:akhiyan_admin/src/features/orders/presentation/orders_screen.dart';
+import 'package:akhiyan_admin/src/features/products/presentation/brands_screen.dart';
+import 'package:akhiyan_admin/src/features/products/presentation/categories_screen.dart';
+import 'package:akhiyan_admin/src/features/products/presentation/product_form_screen.dart';
+import 'package:akhiyan_admin/src/features/products/presentation/products_screen.dart';
+import 'package:akhiyan_admin/src/features/shortlinks/presentation/shortlinks_screen.dart';
+import 'package:akhiyan_admin/src/features/staff/presentation/staff_screen.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
 
 /// Route paths in one place — referenced from screens via `AppRoute.x.path`
 /// instead of magic strings.
@@ -88,6 +91,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, _) => const OrderFormScreen(),
           ),
           GoRoute(
+            path: '/orders/incomplete',
+            builder: (_, _) => const IncompleteOrdersScreen(),
+          ),
+          GoRoute(
             path: '/orders/:id',
             builder: (_, state) =>
                 OrderDetailScreen(orderId: state.pathParameters['id']!),
@@ -105,6 +112,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/products/:id',
             builder: (_, state) =>
                 ProductFormScreen(productId: state.pathParameters['id']),
+          ),
+          GoRoute(
+            path: '/categories',
+            builder: (_, _) => const CategoriesScreen(),
+          ),
+          GoRoute(
+            path: '/brands',
+            builder: (_, _) => const BrandsScreen(),
           ),
           GoRoute(
             path: AppRoute.marketing.path,

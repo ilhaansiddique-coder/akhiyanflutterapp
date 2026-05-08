@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/app_shell_app_bar.dart';
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart';
 
 /// Marketing hub. Merged from `marketing_overview_2/code.html` and the prior
 /// Flutter port:
@@ -401,7 +401,7 @@ class _StatIndicator extends StatelessWidget {
           style: AppTypography.h3.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            height: 1.0,
+            height: 1,
           ),
         ),
         const SizedBox(height: 2),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../theme/colors.dart';
-import '../theme/typography.dart';
-import 'app_shell.dart';
-import 'notification_bell.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
+import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
 
 /// AppBar shared by every top-level tab in the bottom-nav shell.
 ///

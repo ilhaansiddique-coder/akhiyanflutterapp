@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/orders/application/orders_providers.dart';
-import '../router/app_router.dart';
-import '../theme/colors.dart';
-import 'app_drawer.dart';
-import 'create_menu.dart';
+import 'package:akhiyan_admin/src/features/orders/application/orders_providers.dart';
+import 'package:akhiyan_admin/src/core/router/app_router.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_drawer.dart';
+import 'package:akhiyan_admin/src/core/widgets/create_menu.dart';
 
 /// Global key for the shell's Scaffold so the hamburger button on the inner
 /// feature screens' `AppShellAppBar` can open the OUTER (shell) drawer —
@@ -22,10 +22,23 @@ final appShellScaffoldKey = GlobalKey<ScaffoldState>();
 /// [NavigationBar] so we can dock the FAB into the bar — the create
 /// affordance becomes the visual anchor of the app, reachable from
 /// every screen.
-class AppShell extends ConsumerWidget {
+///
+/// The bottom bar + FAB live OUTSIDE the drawer's scrim by default — the
+/// Scaffold draws them over the drawer when it opens. We track drawer
+/// open/close via [Scaffold.onDrawerChanged] and hide both while the
+/// drawer is visible so the side menu reads as a true full-height overlay
+/// (matching the web admin's sidebar that obscures everything beneath it).
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, super.key});
 
   final Widget child;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  bool _drawerOpen = false;
 
   static const _destinations = <_NavDest>[
     _NavDest(AppRoute.dashboard, Icons.dashboard_outlined,
@@ -45,14 +58,17 @@ class AppShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final selected = _indexFor(context);
     final pendingOrders = ref.watch(pendingOrdersCountProvider);
 
     return Scaffold(
       key: appShellScaffoldKey,
       drawer: const AppDrawer(),
-      body: child,
+      onDrawerChanged: (open) {
+        if (mounted) setState(() => _drawerOpen = open);
+      },
+      body: widget.child,
       // Center-docked FAB sits in the BottomAppBar's notch. The bar's
       // `shape: CircularNotchedRectangle()` carves out the space.
       // FAB stays brand-primary so it pops against any screen background
@@ -137,7 +153,7 @@ class _NavItem extends StatelessWidget {
     // Bar background is brand primary, so items use onPrimary (white).
     // Selected = full opacity, unselected = 65% so the active tab still
     // reads at a glance even when both colours are the same hue.
-    final activeColor = AppColors.onPrimary;
+    const activeColor = AppColors.onPrimary;
     final color = isSelected
         ? activeColor
         : activeColor.withValues(alpha: 0.65);
@@ -154,14 +170,12 @@ class _NavItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            badgeCount > 0
-                ? Badge(
+            if (badgeCount > 0) Badge(
                     backgroundColor: AppColors.error,
                     textColor: AppColors.onError,
                     smallSize: 8,
                     child: iconWidget,
-                  )
-                : iconWidget,
+                  ) else iconWidget,
             const SizedBox(height: 4),
             Text(
               dest.label,

@@ -1,5 +1,5 @@
-import '../../../api/akhiyan_api.dart' as api;
-import 'failures.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/errors/failures.dart';
 
 /// Maps any thrown object from the data layer into a [Failure] subclass.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import '../../../api/akhiyan_api.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart';
 
 /// Production-grade [TokenStorage] backed by `flutter_secure_storage`
 /// (Keychain on iOS, EncryptedSharedPreferences on Android) with an

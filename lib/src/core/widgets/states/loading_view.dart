@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({this.message, super.key});

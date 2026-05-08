@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/colors.dart';
-import '../theme/spacing.dart';
-import '../theme/typography.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
 
 /// Numbered pagination bar shown at the bottom of list screens.
 ///
@@ -15,10 +15,7 @@ import '../theme/typography.dart';
 ///   `<  1  ...  4  [5]  6  ...  12  >`  (totalPages == 12, current == 5)
 class PaginationBar extends StatelessWidget {
   const PaginationBar({
-    super.key,
-    required this.currentPage,
-    required this.totalPages,
-    required this.onPageChanged,
+    required this.currentPage, required this.totalPages, required this.onPageChanged, super.key,
     this.loadingPage,
   });
 

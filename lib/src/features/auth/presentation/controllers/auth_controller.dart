@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/api/api_providers.dart';
-import '../../data/repositories/auth_repository_impl.dart';
-import '../../domain/entities/user.dart';
-import '../../domain/repositories/auth_repository.dart';
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:akhiyan_admin/src/features/auth/domain/entities/user.dart';
+import 'package:akhiyan_admin/src/features/auth/domain/repositories/auth_repository.dart';
 
 /// Wires the auth domain into Riverpod.
 ///

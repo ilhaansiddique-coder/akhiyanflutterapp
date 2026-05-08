@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../api/akhiyan_api.dart';
-import '../../../config/env.dart';
-import '../../features/auth/presentation/controllers/auth_controller.dart';
-import 'api_config.dart';
-import 'secure_token_storage.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart';
+import 'package:akhiyan_admin/config/env.dart';
+import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:akhiyan_admin/src/core/api/api_config.dart';
+import 'package:akhiyan_admin/src/core/api/secure_token_storage.dart';
 
 /// Singleton-ish [AkhiyanApi] for the whole app. Created lazily on first
 /// access, base URL chosen by [ApiConfig], tokens persisted via
@@ -100,13 +100,6 @@ const int kListPageSize = 20;
 /// numbered pagination bar to render.
 @immutable
 class PagedListState<T> {
-  final List<T> items;
-  final int currentPage; // 1-based; 0 means "nothing loaded yet"
-  final int totalPages;
-  final int total;
-  final bool loading;
-  final bool refreshing;
-  final Object? error;
 
   const PagedListState({
     this.items = const [],
@@ -117,6 +110,13 @@ class PagedListState<T> {
     this.refreshing = false,
     this.error,
   });
+  final List<T> items;
+  final int currentPage; // 1-based; 0 means "nothing loaded yet"
+  final int totalPages;
+  final int total;
+  final bool loading;
+  final bool refreshing;
+  final Object? error;
 
   PagedListState<T> copyWith({
     List<T>? items,
@@ -220,8 +220,6 @@ abstract class SinglePageNotifier<T> extends Notifier<PagedListState<T>> {
         currentPage: res.pagination.page,
         totalPages: res.pagination.totalPages,
         total: res.pagination.total,
-        loading: false,
-        refreshing: false,
       );
       _maybePrefetch(res.pagination.page + 1);
     } catch (e) {
@@ -335,7 +333,7 @@ class _InventoryPagedNotifier extends SinglePageNotifier<InventoryItem> {
         .list(page: page, pageSize: pageSize);
     final items = res.data.map((p) {
       final String level;
-      if (p.unlimitedStock == true) {
+      if (p.unlimitedStock ?? false) {
         level = 'unlimited';
       } else if (p.stock <= 0) {
         level = 'critical';

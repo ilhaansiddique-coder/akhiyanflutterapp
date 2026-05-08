@@ -1,4 +1,4 @@
-import '../entities/user.dart';
+import 'package:akhiyan_admin/src/features/auth/domain/entities/user.dart';
 
 /// Auth domain contract.
 ///

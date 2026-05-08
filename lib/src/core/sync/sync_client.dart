@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-import '../api/api_config.dart';
-import '../api/secure_token_storage.dart';
+import 'package:akhiyan_admin/src/core/api/api_config.dart';
+import 'package:akhiyan_admin/src/core/api/secure_token_storage.dart';
 
 /// Live-sync channel name → version number.
 ///
@@ -16,6 +16,12 @@ import '../api/secure_token_storage.dart';
 /// invalidate their data providers when their channel's version changes.
 @immutable
 class SyncState {
+
+  const SyncState({
+    this.versions = const {},
+    this.connected = false,
+    this.lastEvent,
+  });
   final Map<String, int> versions;
   final bool connected;
   /// The most recent event received from the stream. Distinct from
@@ -23,12 +29,6 @@ class SyncState {
   /// the NotificationStore care about each individual event, not the
   /// running aggregate. `null` until the first bump arrives.
   final SyncEvent? lastEvent;
-
-  const SyncState({
-    this.versions = const {},
-    this.connected = false,
-    this.lastEvent,
-  });
 
   SyncState copyWith({
     Map<String, int>? versions,
@@ -48,13 +48,7 @@ class SyncState {
 /// `SyncNotify` interface in `src/lib/sync.ts` on the backend
 /// (severity is one of: info, warn, alert).
 @immutable
-class SyncNotify {
-  final String kind;
-  final String title;
-  final String body;
-  final String? href;
-  final String? icon;
-  final String? severity; // "info" | "warn" | "alert"
+class SyncNotify { // "info" | "warn" | "alert"
 
   const SyncNotify({
     required this.kind,
@@ -73,6 +67,12 @@ class SyncNotify {
         icon: json['icon'] as String?,
         severity: json['severity'] as String?,
       );
+  final String kind;
+  final String title;
+  final String body;
+  final String? href;
+  final String? icon;
+  final String? severity;
 }
 
 /// SSE event payload from the server. Backend wire shape:
@@ -81,10 +81,6 @@ class SyncNotify {
 /// (older snapshots before the notify protocol shipped).
 @immutable
 class SyncEvent {
-  final String channel;
-  final int version;
-  final int ts;
-  final SyncNotify? notify;
 
   const SyncEvent({
     required this.channel,
@@ -101,6 +97,10 @@ class SyncEvent {
             ? SyncNotify.fromJson(json['notify'] as Map<String, dynamic>)
             : null,
       );
+  final String channel;
+  final int version;
+  final int ts;
+  final SyncNotify? notify;
 }
 
 /// Long-lived SSE consumer.
@@ -164,7 +164,7 @@ class SyncClient extends Notifier<SyncState> {
 
       // SSE frames are blank-line delimited. We split on \n and accumulate
       // `data:` lines until we see an empty line, then JSON-parse the buffer.
-      String buffer = '';
+      var buffer = '';
       _sub = res.stream
           .transform(utf8.decoder)
           .transform(const LineSplitter())

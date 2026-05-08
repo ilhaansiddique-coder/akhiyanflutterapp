@@ -1,4 +1,4 @@
-import '../../../config/env.dart';
+import 'package:akhiyan_admin/config/env.dart';
 
 /// Resolves the API base URL based on Env configuration.
 ///

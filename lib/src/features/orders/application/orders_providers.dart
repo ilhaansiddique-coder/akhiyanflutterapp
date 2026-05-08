@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 
 /// Number of pending orders awaiting attention. Drives the unread dot on the
 /// Orders tab in the bottom nav. Derived from the live orders list — returns

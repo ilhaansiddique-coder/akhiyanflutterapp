@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../sync/sync_client.dart';
+import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
 
 /// Visual emphasis level emitted by the backend.
 enum NotifySeverity { info, warn, alert }
@@ -22,15 +22,6 @@ NotifySeverity _parseSeverity(String? raw) {
 /// whose backend payload included a `notify` object.
 @immutable
 class NotificationEntry {
-  final String id; // synthesised from kind + channel + version (dedupe key)
-  final String kind;
-  final String title;
-  final String body;
-  final String? href;
-  final String? icon;
-  final NotifySeverity severity;
-  final DateTime receivedAt;
-  final bool read;
 
   const NotificationEntry({
     required this.id,
@@ -43,6 +34,15 @@ class NotificationEntry {
     required this.receivedAt,
     this.read = false,
   });
+  final String id; // synthesised from kind + channel + version (dedupe key)
+  final String kind;
+  final String title;
+  final String body;
+  final String? href;
+  final String? icon;
+  final NotifySeverity severity;
+  final DateTime receivedAt;
+  final bool read;
 
   NotificationEntry copyWith({bool? read}) => NotificationEntry(
         id: id,
@@ -102,11 +102,11 @@ IconData _iconForKind(String kind) {
 
 @immutable
 class NotificationState {
+
+  const NotificationState({this.entries = const []});
   /// Newest-first list of notifications received during this app session.
   /// Capped at [_maxEntries] so a long-running session can't bloat memory.
   final List<NotificationEntry> entries;
-
-  const NotificationState({this.entries = const []});
 
   int get unreadCount => entries.where((e) => !e.read).length;
 

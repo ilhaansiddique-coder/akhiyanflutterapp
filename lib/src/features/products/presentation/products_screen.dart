@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../api/akhiyan_api.dart' as api;
-import '../../../core/api/api_providers.dart';
-import '../../../core/theme/colors.dart';
-import '../../../core/theme/spacing.dart';
-import '../../../core/theme/typography.dart';
-import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/app_shell_app_bar.dart';
-import '../../../core/widgets/page_loading_overlay.dart';
-import '../../../core/widgets/pagination_bar.dart';
-import '../../../core/widgets/skeleton.dart';
-import '../domain/product.dart';
+import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/page_loading_overlay.dart';
+import 'package:akhiyan_admin/src/core/widgets/pagination_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/skeleton.dart';
+import 'package:akhiyan_admin/src/features/products/domain/product.dart';
 
 enum _ProductFilter { all, active, draft, lowStock, outOfStock }
 
@@ -281,7 +281,7 @@ String _describeError(Object e) {
 
 /// Derives a [StockState] from an api [api.Product].
 StockState stockStateOf(api.Product p) {
-  if (p.unlimitedStock == true) return StockState.healthy;
+  if (p.unlimitedStock ?? false) return StockState.healthy;
   if (p.stock <= 0) return StockState.out;
   if (p.stock <= 5) return StockState.low;
   return StockState.healthy;
@@ -388,9 +388,9 @@ class _ProductCardSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SkeletonText(width: 180, fontSize: 14),
+                SkeletonText(width: 180),
                 SizedBox(height: 8),
-                SkeletonText(width: 120, fontSize: 13),
+                SkeletonText(fontSize: 13),
                 SizedBox(height: 8),
                 SkeletonBox(width: 60, height: 16, radius: AppRadius.small),
               ],
@@ -417,7 +417,7 @@ class _ProductCard extends StatelessWidget {
       StockState.low => AppColors.error,
       StockState.out => AppColors.error,
     };
-    final stockLabel = product.unlimitedStock == true
+    final stockLabel = product.unlimitedStock ?? false
         ? 'In stock'
         : state == StockState.out
             ? 'Out of Stock'
@@ -447,7 +447,7 @@ class _ProductCard extends StatelessWidget {
               width: 64,
               height: 64,
               child: product.image.isEmpty
-                  ? Container(
+                  ? ColoredBox(
                       color: AppColors.surfaceContainer,
                       child: const Icon(
                         Icons.image_outlined,
@@ -457,7 +457,7 @@ class _ProductCard extends StatelessWidget {
                   : Image.network(
                       product.image,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
+                      errorBuilder: (_, _, _) => ColoredBox(
                         color: AppColors.surfaceContainer,
                         child: const Icon(
                           Icons.image_outlined,

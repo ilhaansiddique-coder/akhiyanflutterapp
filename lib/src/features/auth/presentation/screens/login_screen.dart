@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/api/api_providers.dart';
-import '../../../../core/errors/error_mapper.dart';
-import '../../../../core/router/app_router.dart';
-import '../../../../core/theme/colors.dart';
-import '../../../../core/theme/spacing.dart';
-import '../../../../core/theme/typography.dart';
-import '../controllers/auth_controller.dart';
+import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
+import 'package:akhiyan_admin/src/core/router/app_router.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
 
 // Login screen uses the same purple brand as the rest of the app
 // (`AppColors.primary` and `AppColors.primaryContainer`) — kept as local

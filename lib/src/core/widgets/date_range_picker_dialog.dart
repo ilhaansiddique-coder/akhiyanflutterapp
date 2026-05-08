@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../theme/colors.dart';
-import '../theme/spacing.dart';
-import '../theme/typography.dart';
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:akhiyan_admin/src/core/theme/typography.dart';
 
 /// Advanced date range picker matching Stripe / Shopify / Plausible style:
 /// preset list on the left, dual-month calendar on the right, read-only
@@ -150,19 +150,19 @@ extension on _Preset {
         );
       case _Preset.thisMonth:
         return DateTimeRange(
-          start: DateTime(today.year, today.month, 1),
+          start: DateTime(today.year, today.month),
           end: today,
         );
       case _Preset.lastMonth:
-        final firstOfThis = DateTime(today.year, today.month, 1);
+        final firstOfThis = DateTime(today.year, today.month);
         final lastOfPrev = firstOfThis.subtract(const Duration(days: 1));
         return DateTimeRange(
-          start: DateTime(lastOfPrev.year, lastOfPrev.month, 1),
+          start: DateTime(lastOfPrev.year, lastOfPrev.month),
           end: lastOfPrev,
         );
       case _Preset.thisYear:
         return DateTimeRange(
-          start: DateTime(today.year, 1, 1),
+          start: DateTime(today.year, 1),
           end: today,
         );
       case _Preset.allTime:
@@ -233,7 +233,7 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
     super.initState();
     _start = _dateOnly(widget.initial.start);
     _end = _dateOnly(widget.initial.end);
-    _visibleMonth = DateTime(_start.year, _start.month, 1);
+    _visibleMonth = DateTime(_start.year, _start.month);
     _activePreset = _detectPreset(_start, _end);
   }
 
@@ -264,7 +264,7 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
       _activePreset = p;
       _pendingAnchor = null;
       // Jump calendar to show the start month (and the month after).
-      _visibleMonth = DateTime(_start.year, _start.month, 1);
+      _visibleMonth = DateTime(_start.year, _start.month);
     });
   }
 
@@ -301,7 +301,6 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
       _visibleMonth = DateTime(
         _visibleMonth.year,
         _visibleMonth.month + delta,
-        1,
       );
     });
   }
@@ -430,7 +429,7 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
   Widget _buildCalendar({required int monthsToShow}) {
     final months = <DateTime>[
       for (var i = 0; i < monthsToShow; i++)
-        DateTime(_visibleMonth.year, _visibleMonth.month + i, 1),
+        DateTime(_visibleMonth.year, _visibleMonth.month + i),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -488,15 +487,15 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
   }
 
   bool _canGoPrev() {
-    final prev = DateTime(_visibleMonth.year, _visibleMonth.month - 1, 1);
+    final prev = DateTime(_visibleMonth.year, _visibleMonth.month - 1);
     return !prev.isBefore(DateTime(widget.firstDate.year,
-        widget.firstDate.month, 1));
+        widget.firstDate.month));
   }
 
   bool _canGoNext(int monthsToShow) {
     final lastShown =
-        DateTime(_visibleMonth.year, _visibleMonth.month + monthsToShow, 1);
-    final cap = DateTime(widget.lastDate.year, widget.lastDate.month + 1, 1);
+        DateTime(_visibleMonth.year, _visibleMonth.month + monthsToShow);
+    final cap = DateTime(widget.lastDate.year, widget.lastDate.month + 1);
     return lastShown.isBefore(cap);
   }
 
@@ -520,7 +519,7 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(null),
+          onPressed: () => Navigator.of(context).pop(),
           style: TextButton.styleFrom(
             foregroundColor: AppColors.onSurfaceVariant,
             padding: const EdgeInsets.symmetric(
@@ -643,7 +642,7 @@ class _MonthGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firstOfMonth = DateTime(month.year, month.month, 1);
+    final firstOfMonth = DateTime(month.year, month.month);
     // Monday=1 ... Sunday=7. We render Sun-first to match BD/US convention.
     final leadingBlanks = firstOfMonth.weekday % 7; // Sun=0, Mon=1, ...
     final daysInMonth =
@@ -713,8 +712,8 @@ class _MonthGrid extends StatelessWidget {
     final disabled = date.isBefore(firstCap) || date.isAfter(lastCap);
 
     Color? bg;
-    Color fg = AppColors.onBackground;
-    FontWeight weight = FontWeight.w500;
+    var fg = AppColors.onBackground;
+    var weight = FontWeight.w500;
     if (disabled) {
       fg = AppColors.outline;
     } else if (isEndpoint) {

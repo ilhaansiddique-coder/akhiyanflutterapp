@@ -40,5 +40,5 @@ class Env {
   /// lands. Override per-build when needed:
   ///
   ///   flutter run --dart-define=TENANT_SLUG=akhiyanbd
-  static const String tenantSlug = String.fromEnvironment('TENANT_SLUG', defaultValue: '');
+  static const String tenantSlug = String.fromEnvironment('TENANT_SLUG');
 }
