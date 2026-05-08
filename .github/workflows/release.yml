@@ -57,17 +57,26 @@ jobs:
       # Optional: decode keystore from base64 secret. Skipped silently if
       # the secret is missing — release build will fall back to debug keys
       # which are fine for first-iteration testing.
+      #
+      # GitHub Actions forbids referencing `secrets.X` directly inside an
+      # `if:` expression at step level (validation error: "Unrecognized
+      # named-value: 'secrets'"). The work-around is to hoist the secret
+      # into an env var on the step, then check `env.X` in the if. The
+      # secret value never appears in logs because GitHub still masks it.
       - name: Decode release keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: env.KEYSTORE_BASE64 != ''
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
           cat > android/key.properties <<EOF
           storeFile=app/release.keystore
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
           EOF
 
       # Build a single universal APK for App Distribution. Split-per-abi
