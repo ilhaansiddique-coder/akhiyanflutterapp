@@ -27,7 +27,12 @@ import 'package:akhiyan_admin/src/features/products/presentation/brands_screen.d
 import 'package:akhiyan_admin/src/features/products/presentation/categories_screen.dart';
 import 'package:akhiyan_admin/src/features/products/presentation/product_form_screen.dart';
 import 'package:akhiyan_admin/src/features/products/presentation/products_screen.dart';
-import 'package:akhiyan_admin/src/features/settings/presentation/settings_screen.dart';
+import 'package:akhiyan_admin/src/features/settings/presentation/checkout_settings_screen.dart';
+import 'package:akhiyan_admin/src/features/settings/presentation/courier_settings_screen.dart';
+import 'package:akhiyan_admin/src/features/settings/presentation/email_settings_screen.dart';
+import 'package:akhiyan_admin/src/features/settings/presentation/language_settings_screen.dart';
+import 'package:akhiyan_admin/src/features/settings/presentation/shipping_settings_screen.dart';
+import 'package:akhiyan_admin/src/features/settings/presentation/site_settings_screen.dart';
 import 'package:akhiyan_admin/src/features/shortlinks/presentation/shortlinks_screen.dart';
 import 'package:akhiyan_admin/src/features/staff/presentation/staff_screen.dart';
 import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
@@ -191,40 +196,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/flash-sales',
             builder: (_, _) => const FlashSalesScreen(),
           ),
-          // ─── Settings: one screen, anchored sub-routes ──────────────
-          // Each settings sub-item in the sidebar opens the same screen
-          // with a different `section` so the user lands on the right
-          // card. Adding a new section: declare the enum value, append
-          // a route here, and wire its mobileRoute on the server.
+          // ─── Settings: dedicated screen per section ─────────────────
+          // Each settings sub-item gets its own screen so the user only
+          // sees fields relevant to that section. All screens share the
+          // /m/admin/settings backbone via SettingsFormState.
           GoRoute(
             path: '/settings',
-            builder: (_, _) =>
-                const SettingsScreen(section: SettingsSection.site),
+            builder: (_, _) => const SiteSettingsScreen(),
           ),
           GoRoute(
             path: '/settings/shipping',
-            builder: (_, _) =>
-                const SettingsScreen(section: SettingsSection.shipping),
+            builder: (_, _) => const ShippingSettingsScreen(),
           ),
           GoRoute(
             path: '/settings/checkout',
-            builder: (_, _) =>
-                const SettingsScreen(section: SettingsSection.checkout),
+            builder: (_, _) => const CheckoutSettingsScreen(),
           ),
           GoRoute(
             path: '/settings/courier',
-            builder: (_, _) =>
-                const SettingsScreen(section: SettingsSection.courier),
+            builder: (_, _) => const CourierSettingsScreen(),
           ),
           GoRoute(
             path: '/settings/email',
-            builder: (_, _) =>
-                const SettingsScreen(section: SettingsSection.email),
+            builder: (_, _) => const EmailSettingsScreen(),
           ),
           GoRoute(
             path: '/settings/language',
-            builder: (_, _) =>
-                const SettingsScreen(section: SettingsSection.language),
+            builder: (_, _) => const LanguageSettingsScreen(),
           ),
         ],
       ),
