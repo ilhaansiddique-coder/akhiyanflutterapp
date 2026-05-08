@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "452782420824",
+    "project_id": "akhiyan-app-7f746",
+    "storage_bucket": "akhiyan-app-7f746.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:452782420824:android:e587c60f3566104242eb2d",
+        "android_client_info": {
+          "package_name": "com.akhiyan.akhiyan_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3HDlprdiP-erhSOOPTwL2VftKRGu7BYE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
