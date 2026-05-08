@@ -443,6 +443,14 @@ final inventoryListProvider = NotifierProvider<
 /// fresh round trip on every return; the in-memory cost is tiny and
 /// freshness is governed by `bumpVersion("orders")` / explicit pull-to-
 /// refresh anyway.
+/// 7-day analytics window used by the Dashboard's bar chart + donut. Kept
+/// separate from [analyticsDataProvider] (30d) so the dashboard's "Last
+/// 7 Days" section doesn't drag the analytics screen back to a 7d window
+/// — they're independent surfaces.
+final dashboardAnalyticsProvider = FutureProvider<AnalyticsData>(
+  (ref) => ref.watch(akhiyanApiProvider).analytics.fetch(period: '7d'),
+);
+
 final analyticsDataProvider = FutureProvider<AnalyticsData>(
   (ref) => ref.watch(akhiyanApiProvider).analytics.fetch(period: '30d'),
 );

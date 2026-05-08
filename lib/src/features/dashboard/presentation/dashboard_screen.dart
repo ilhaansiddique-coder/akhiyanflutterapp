@@ -12,6 +12,7 @@ import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
 import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart';
 import 'package:akhiyan_admin/src/core/widgets/date_range_picker_dialog.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:akhiyan_admin/src/features/dashboard/presentation/dashboard_charts.dart';
 
 /// Dashboard home — bound to live data via [dashboardDataProvider].
 /// Hardcoded numbers were replaced with reactive bindings; while data is
@@ -118,6 +119,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
             _StatsGrid(cards: data?.cards),
             const SizedBox(height: 16),
+            // Analytics charts — sourced from /m/analytics?period=7d. Lives
+            // in its own provider so a date-range change on the stats
+            // section above doesn't drag the "Last 7 Days" chart with it.
+            _DashboardCharts(),
+            const SizedBox(height: 16),
             _SectionHeader(
               title: 'Recent Orders',
               trailing: TextButton(
@@ -133,6 +139,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _TopProducts(products: data?.topProducts, isLoading: isLoading),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Charts (Last 7 Days bar + Status donut) ──────────────────────────────
+
+/// Reads `dashboardAnalyticsProvider` (period=7d) and renders the bar +
+/// donut cards from [dashboard_charts.dart]. Falls back to a skeleton
+/// while loading and an error banner on failure — never blanks out the
+/// surrounding dashboard.
+class _DashboardCharts extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(dashboardAnalyticsProvider);
+    return async.when(
+      loading: () => const DashboardChartsSkeleton(),
+      error: (e, _) => _ErrorBanner(
+        message: _describeError(e),
+        onRetry: () => ref.invalidate(dashboardAnalyticsProvider),
+      ),
+      data: (a) => Column(
+        children: [
+          OrdersBarChartCard(points: a.revenueChart),
+          const SizedBox(height: AppSpacing.md),
+          StatusDonutCard(statusBreakdown: a.statusBreakdown),
+        ],
       ),
     );
   }
