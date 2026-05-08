@@ -55,6 +55,52 @@ final brandsProvider = FutureProvider<List<Brand>>(
   (ref) => ref.watch(akhiyanApiProvider).brands.list(),
 );
 
+/// Marketing landing pages. Backed by `/m/landing-pages`. Refetched by the
+/// central `syncInvalidationProvider` on `landing-pages` channel bumps so
+/// edits from another admin (web or mobile) appear within a few seconds.
+final landingPagesProvider = FutureProvider<List<LandingPage>>(
+  (ref) => ref.watch(akhiyanApiProvider).landingPages.list(),
+);
+
+/// Single landing-page detail by id. Auto-disposed: only relevant while the
+/// edit screen is mounted. Invalidated after a save so the form re-loads
+/// with the server's canonical post-save shape (slug may have changed via
+/// the server's uniqueSlug generator).
+final landingPageDetailProvider =
+    FutureProvider.family.autoDispose<LandingPage, String>(
+  (ref, id) => ref.watch(akhiyanApiProvider).landingPages.detail(id),
+);
+
+/// Product feed defaults + stats. Auto-refetches on `feeds` channel bumps
+/// (the admin feeds PUT now bumps the channel) so two admins editing
+/// in parallel see each other's saves.
+final feedConfigProvider = FutureProvider<FeedConfig>(
+  (ref) => ref.watch(akhiyanApiProvider).feeds.fetch(),
+);
+
+/// All coupons (active and inactive). The mobile screen filters/sorts
+/// client-side; the dataset is small enough that pagination isn't worth
+/// the complexity. Refetched by `syncInvalidationProvider` on `coupons`
+/// channel bumps.
+final couponsProvider = FutureProvider<List<Coupon>>(
+  (ref) => ref.watch(akhiyanApiProvider).coupons.list(),
+);
+
+/// All flash sales. Refetched on `flash-sales` channel bumps.
+final flashSalesProvider = FutureProvider<List<FlashSale>>(
+  (ref) => ref.watch(akhiyanApiProvider).flashSales.list(),
+);
+
+/// Every row of the `siteSetting` table as a key→value map. Backs every
+/// settings section in the SettingsScreen (Site, Checkout, Courier, Email,
+/// Language). Refetched on the `settings` SSE channel — saves from web or
+/// another phone propagate within ~5s.
+///
+/// Sensitive keys come back masked as [kSecretMask] — see AdminSettingsApi.
+final adminSettingsProvider = FutureProvider<Map<String, String?>>(
+  (ref) => ref.watch(akhiyanApiProvider).adminSettings.fetch(),
+);
+
 /// Single order with full details (items, courier, payment, customer
 /// address). Keyed by order id so two open detail screens don't share state.
 /// Auto-disposed: detail data is only relevant while the screen is mounted —

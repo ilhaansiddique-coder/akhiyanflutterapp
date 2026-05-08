@@ -6,7 +6,12 @@ import 'package:akhiyan_admin/src/features/auth/domain/entities/user.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/screens/login_screen.dart';
 import 'package:akhiyan_admin/src/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:akhiyan_admin/src/features/marketing/presentation/coupons_screen.dart';
+import 'package:akhiyan_admin/src/features/marketing/presentation/flash_sales_screen.dart';
+import 'package:akhiyan_admin/src/features/marketing/presentation/landing_page_form_screen.dart';
+import 'package:akhiyan_admin/src/features/marketing/presentation/landing_pages_screen.dart';
 import 'package:akhiyan_admin/src/features/marketing/presentation/marketing_screen.dart';
+import 'package:akhiyan_admin/src/features/marketing/presentation/product_feeds_screen.dart';
 import 'package:akhiyan_admin/src/features/analytics/presentation/analytics_screen.dart';
 import 'package:akhiyan_admin/src/features/courier/presentation/courier_screen.dart';
 import 'package:akhiyan_admin/src/features/customers/presentation/customer_detail_screen.dart';
@@ -22,6 +27,7 @@ import 'package:akhiyan_admin/src/features/products/presentation/brands_screen.d
 import 'package:akhiyan_admin/src/features/products/presentation/categories_screen.dart';
 import 'package:akhiyan_admin/src/features/products/presentation/product_form_screen.dart';
 import 'package:akhiyan_admin/src/features/products/presentation/products_screen.dart';
+import 'package:akhiyan_admin/src/features/settings/presentation/settings_screen.dart';
 import 'package:akhiyan_admin/src/features/shortlinks/presentation/shortlinks_screen.dart';
 import 'package:akhiyan_admin/src/features/staff/presentation/staff_screen.dart';
 import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
@@ -163,6 +169,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/notifications',
             builder: (_, _) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/landing-pages',
+            builder: (_, _) => const LandingPagesScreen(),
+          ),
+          GoRoute(
+            path: '/landing-pages/:id',
+            builder: (_, state) =>
+                LandingPageFormScreen(pageId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/feeds',
+            builder: (_, _) => const ProductFeedsScreen(),
+          ),
+          GoRoute(
+            path: '/coupons',
+            builder: (_, _) => const CouponsScreen(),
+          ),
+          GoRoute(
+            path: '/flash-sales',
+            builder: (_, _) => const FlashSalesScreen(),
+          ),
+          // ─── Settings: one screen, anchored sub-routes ──────────────
+          // Each settings sub-item in the sidebar opens the same screen
+          // with a different `section` so the user lands on the right
+          // card. Adding a new section: declare the enum value, append
+          // a route here, and wire its mobileRoute on the server.
+          GoRoute(
+            path: '/settings',
+            builder: (_, _) =>
+                const SettingsScreen(section: SettingsSection.site),
+          ),
+          GoRoute(
+            path: '/settings/shipping',
+            builder: (_, _) =>
+                const SettingsScreen(section: SettingsSection.shipping),
+          ),
+          GoRoute(
+            path: '/settings/checkout',
+            builder: (_, _) =>
+                const SettingsScreen(section: SettingsSection.checkout),
+          ),
+          GoRoute(
+            path: '/settings/courier',
+            builder: (_, _) =>
+                const SettingsScreen(section: SettingsSection.courier),
+          ),
+          GoRoute(
+            path: '/settings/email',
+            builder: (_, _) =>
+                const SettingsScreen(section: SettingsSection.email),
+          ),
+          GoRoute(
+            path: '/settings/language',
+            builder: (_, _) =>
+                const SettingsScreen(section: SettingsSection.language),
           ),
         ],
       ),

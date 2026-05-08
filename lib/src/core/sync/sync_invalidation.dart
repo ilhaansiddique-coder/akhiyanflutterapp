@@ -109,6 +109,23 @@ class _SyncInvalidator {
         _ref.invalidate(categoriesProvider);
       case 'brands':
         _ref.invalidate(brandsProvider);
+      case 'landing-pages':
+        _ref.invalidate(landingPagesProvider);
+        // Drop the detail family too — if the edit screen is open while
+        // another admin saves, it'll re-fetch the canonical shape.
+        _ref.invalidate(landingPageDetailProvider);
+      case 'feeds':
+        _ref.invalidate(feedConfigProvider);
+      case 'coupons':
+        _ref.invalidate(couponsProvider);
+      case 'flash-sales':
+        _ref.invalidate(flashSalesProvider);
+      case 'settings':
+        // Drives the SettingsScreen's editable forms (Site, Checkout,
+        // Courier, Email, Language). The `theme` channel keeps its own
+        // dedicated path through liveThemeProvider so a colour-only
+        // change doesn't force a full settings refetch.
+        _ref.invalidate(adminSettingsProvider);
       // 'reviews', 'banners', 'menus', 'flash-sales', 'settings' — no
       // listening providers wired yet; bumps recorded in the version map
       // for any future screen that watches them via syncVersionProvider.

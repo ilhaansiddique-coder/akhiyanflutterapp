@@ -99,14 +99,173 @@ class LiveNav {
   static const empty = LiveNav(groups: []);
 }
 
+/// Labels (case-insensitive) the Flutter app hides from the sidebar even
+/// when the backend ships them. Use this for items that exist in the web
+/// admin but won't have a Flutter screen anytime soon — better than
+/// rendering them greyed-out forever. Backend should still be the source
+/// of truth long-term; remove from `src/lib/nav-tree.ts` once aligned.
+const _kHiddenNavLabels = <String>{
+  'banners',
+  'menus',
+};
+
+bool _isHidden(String label) =>
+    _kHiddenNavLabels.contains(label.trim().toLowerCase());
+
+/// Filters out hidden labels from a [LiveNav] tree:
+///  - drops any group whose label is hidden, AND
+///  - drops any leaf whose label is hidden inside the surviving groups.
+LiveNav _filterHidden(LiveNav nav) {
+  final groups = <LiveNavGroup>[];
+  for (final g in nav.groups) {
+    if (_isHidden(g.label)) continue;
+    final items = g.items.where((it) => !_isHidden(it.label)).toList(
+          growable: false,
+        );
+    groups.add(
+      LiveNavGroup(
+        i18nKey: g.i18nKey,
+        label: g.label,
+        icon: g.icon,
+        webRoute: g.webRoute,
+        mobileRoute: g.mobileRoute,
+        items: items,
+      ),
+    );
+  }
+  return LiveNav(groups: groups);
+}
+
+/// Hardcoded fallback shown when `/ui/nav` is unreachable or returns
+/// non-JSON. Without this the entire sidebar errors out the moment the
+/// backend hiccups (Coolify cold-start, route undeployed, network blip).
+/// Mirrors the production menu structure as of 2026-05; should be kept
+/// roughly in sync with `src/lib/nav-tree.ts` on the web admin.
+const _kFallbackNav = LiveNav(
+  groups: [
+    LiveNavGroup(
+      i18nKey: 'dashboard',
+      label: 'Dashboard',
+      icon: 'home',
+      mobileRoute: '/dashboard',
+    ),
+    LiveNavGroup(
+      i18nKey: 'productManagement',
+      label: 'Product Management',
+      icon: 'shoppingBag',
+      items: [
+        LiveNavLeaf(
+          i18nKey: 'products',
+          label: 'Products',
+          icon: 'package',
+          webRoute: '/admin/products',
+          mobileRoute: '/products',
+        ),
+        LiveNavLeaf(
+          i18nKey: 'inventory',
+          label: 'Inventory',
+          icon: 'box',
+          webRoute: '/admin/inventory',
+          mobileRoute: '/inventory',
+        ),
+      ],
+    ),
+    LiveNavGroup(
+      i18nKey: 'orderManagement',
+      label: 'Order Management',
+      icon: 'shoppingCart',
+      items: [
+        LiveNavLeaf(
+          i18nKey: 'orders',
+          label: 'Orders',
+          icon: 'shoppingCart',
+          webRoute: '/admin/orders',
+          mobileRoute: '/orders',
+        ),
+        LiveNavLeaf(
+          i18nKey: 'courier',
+          label: 'Courier',
+          icon: 'truck',
+          webRoute: '/admin/courier',
+          mobileRoute: '/courier',
+        ),
+        LiveNavLeaf(
+          i18nKey: 'fraud',
+          label: 'Fraud & Security',
+          icon: 'shield',
+          webRoute: '/admin/fraud',
+          mobileRoute: '/fraud-security',
+        ),
+      ],
+    ),
+    LiveNavGroup(
+      i18nKey: 'customer',
+      label: 'Customer',
+      icon: 'users',
+      items: [
+        LiveNavLeaf(
+          i18nKey: 'customers',
+          label: 'Customers',
+          icon: 'users',
+          webRoute: '/admin/customers',
+          mobileRoute: '/customers',
+        ),
+        LiveNavLeaf(
+          i18nKey: 'staff',
+          label: 'Staff',
+          icon: 'users',
+          webRoute: '/admin/staff',
+          mobileRoute: '/staff',
+        ),
+      ],
+    ),
+    LiveNavGroup(
+      i18nKey: 'marketing',
+      label: 'Marketing',
+      icon: 'zap',
+      items: [
+        LiveNavLeaf(
+          i18nKey: 'shortlinks',
+          label: 'Shortlinks',
+          icon: 'link',
+          webRoute: '/admin/shortlinks',
+          mobileRoute: '/shortlinks',
+        ),
+      ],
+    ),
+    LiveNavGroup(
+      i18nKey: 'analytics',
+      label: 'Analytics',
+      icon: 'barChart',
+      mobileRoute: '/analytics',
+    ),
+    LiveNavGroup(
+      i18nKey: 'notifications',
+      label: 'Notifications',
+      icon: 'bell',
+      mobileRoute: '/notifications',
+    ),
+  ],
+);
+
 /// Fetches `/api/v1/m/ui/nav`. Refetches when the `settings` channel bumps
 /// so future role-gating or feature-flag changes propagate without an app
 /// restart. Theme changes flow through `liveThemeProvider` separately.
+///
+/// **Resilience:** if the request fails (404, timeout, non-JSON, network
+/// down), falls back to [_kFallbackNav] so the drawer still works. We
+/// never let a transient backend issue break the entire sidebar.
 final liveNavProvider = FutureProvider<LiveNav>((ref) async {
   ref.watch(syncVersionProvider('settings'));
   final api = ref.watch(akhiyanApiProvider);
-  final res = await api.request('GET', '/ui/nav') as Map<String, dynamic>;
-  return LiveNav.fromJson(res);
+  try {
+    final res = await api.request('GET', '/ui/nav') as Map<String, dynamic>;
+    return _filterHidden(LiveNav.fromJson(res));
+  } on Exception {
+    // Backend unreachable or returned a non-JSON error page (404 HTML, etc).
+    // Fall back to the bundled menu — degraded mode but the app stays usable.
+    return _filterHidden(_kFallbackNav);
+  }
 });
 
 /// Maps the Lucide-style icon-name strings the backend emits to Flutter

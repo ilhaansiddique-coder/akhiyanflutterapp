@@ -7,6 +7,7 @@ import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_co
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 
 /// Side drawer modelled on the web dashboard sidebar
 /// (`src/components/DashboardLayout.tsx`).
@@ -115,7 +116,7 @@ class _SidebarBody extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             children: [
-              for (final group in nav.groups)
+              for (final group in _filterGroups(nav.groups))
                 _NavGroup(
                   group: group,
                   currentRoute: currentRoute,
@@ -127,8 +128,39 @@ class _SidebarBody extends ConsumerWidget {
           ),
         ),
         _Footer(name: name, email: email),
+        const _BuildInfo(),
       ],
     );
+  }
+
+  /// Drop entries the mobile app doesn't surface: Content, Banner, Menu,
+  /// and the Customizer settings sub-item. The server-side nav tree still
+  /// lists them for the web admin; we hide them here so adding/removing
+  /// stays a single client change.
+  static const _hiddenLabels = {'content', 'banner', 'menu', 'customizer'};
+
+  static List<LiveNavGroup> _filterGroups(List<LiveNavGroup> groups) {
+    final out = <LiveNavGroup>[];
+    for (final g in groups) {
+      if (_hiddenLabels.contains(g.label.trim().toLowerCase())) continue;
+      if (g.isLeaf) {
+        out.add(g);
+        continue;
+      }
+      final keptItems = g.items
+          .where((i) => !_hiddenLabels.contains(i.label.trim().toLowerCase()))
+          .toList(growable: false);
+      if (keptItems.isEmpty) continue;
+      out.add(LiveNavGroup(
+        i18nKey: g.i18nKey,
+        label: g.label,
+        icon: g.icon,
+        webRoute: g.webRoute,
+        mobileRoute: g.mobileRoute,
+        items: keptItems,
+      ));
+    }
+    return out;
   }
 
   static bool _isGroupActive(LiveNavGroup g, String currentRoute) {
@@ -445,6 +477,66 @@ class _Footer extends ConsumerWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tiny build/patch indicator shown under the user row.
+///
+/// On a Shorebird-built APK this shows e.g. `v1.0.0+2 · patch 5`. On a
+/// regular `flutter build apk` (Shorebird runtime not present) it falls
+/// back to `v1.0.0+2 · base`. Reading this off the drawer is the fastest
+/// way to confirm "is this phone actually running the latest patch?"
+class _BuildInfo extends StatefulWidget {
+  const _BuildInfo();
+
+  @override
+  State<_BuildInfo> createState() => _BuildInfoState();
+}
+
+class _BuildInfoState extends State<_BuildInfo> {
+  // Hardcoded so we don't depend on the package_info_plus plugin (which
+  // would require a fresh APK build to add). Bump this string in lockstep
+  // with `pubspec.yaml`'s `version:` field at every new APK release.
+  static const _releaseVersion = '1.0.0+2';
+
+  final _updater = ShorebirdUpdater();
+  String _patchLabel = '…';
+
+  @override
+  void initState() {
+    super.initState();
+    _readPatch();
+  }
+
+  Future<void> _readPatch() async {
+    try {
+      final patch = await _updater.readCurrentPatch();
+      if (!mounted) return;
+      setState(() {
+        _patchLabel = patch == null ? 'base' : 'patch ${patch.number}';
+      });
+    } on Exception {
+      if (!mounted) return;
+      // Updater not available (running on a non-Shorebird build, e.g. the
+      // dev `flutter run`). Show "base" so the row still renders cleanly.
+      setState(() => _patchLabel = 'base');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Text(
+        'v$_releaseVersion · $_patchLabel',
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.5),
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.3,
+        ),
       ),
     );
   }

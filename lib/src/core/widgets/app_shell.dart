@@ -75,17 +75,22 @@ class _AppShellState extends ConsumerState<AppShell> {
       // when scrolled past, while the bar around it is also primary —
       // the visible curved gap (notchMargin: 14) is what separates them
       // visually, matching the reference design.
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => openCreateMenu(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        elevation: 6,
-        shape: const CircleBorder(),
-        tooltip: 'Create',
-        child: const Icon(Icons.add, size: 30),
-      ),
+      // Hide the FAB while the drawer is open — without this it stays
+      // docked into the bottom bar and floats over the drawer's right
+      // edge, breaking the "drawer covers everything" illusion.
+      floatingActionButton: _drawerOpen
+          ? null
+          : FloatingActionButton(
+              onPressed: () => openCreateMenu(context),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              elevation: 6,
+              shape: const CircleBorder(),
+              tooltip: 'Create',
+              child: const Icon(Icons.add, size: 30),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
+      bottomNavigationBar: _drawerOpen ? null : BottomAppBar(
         color: AppColors.primary,
         elevation: 8,
         shape: const CircularNotchedRectangle(),

@@ -1274,6 +1274,9 @@ class AkhiyanApi {
     fraud = FraudApi(this);
     staff = StaffApi(this);
     media = MediaApi(this);
+    landingPages = LandingPagesApi(this);
+    feeds = FeedsApi(this);
+    adminSettings = AdminSettingsApi(this);
   }
   final String baseUrl;
   final TokenStorage _storage;
@@ -1305,6 +1308,9 @@ class AkhiyanApi {
   late final FraudApi fraud;
   late final StaffApi staff;
   late final MediaApi media;
+  late final LandingPagesApi landingPages;
+  late final FeedsApi feeds;
+  late final AdminSettingsApi adminSettings;
 
   TokenStorage get storage => _storage;
 
@@ -2151,6 +2157,394 @@ class MediaApi {
       throw ApiException(500, 'Server did not return a URL');
     }
     return url;
+  }
+}
+
+// =============================================================================
+// Landing Pages — admin-managed marketing pages.
+// =============================================================================
+
+/// One landing page row. Mobile only edits the "core" fields directly
+/// (title/slug/active/hero block/primaryColor); the JSON arrays
+/// (features, testimonials, faq, sections, problemPoints, howItWorks)
+/// are passed through verbatim from the server so saves don't lose
+/// rich content the web admin authored.
+class LandingPage {
+  LandingPage({
+    required this.id,
+    required this.slug,
+    required this.title,
+    this.isActive = true,
+    this.heroHeadline,
+    this.heroSubheadline,
+    this.heroImage,
+    this.heroCta,
+    this.heroBadge,
+    this.heroTrustText,
+    this.primaryColor,
+    this.metaTitle,
+    this.metaDescription,
+    this.createdAt,
+    this.raw = const {},
+  });
+
+  factory LandingPage.fromJson(Map<String, dynamic> json) => LandingPage(
+        id: (json['id'] ?? '').toString(),
+        slug: (json['slug'] as String?) ?? '',
+        title: (json['title'] as String?) ?? '',
+        isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
+        heroHeadline:
+            (json['heroHeadline'] ?? json['hero_headline']) as String?,
+        heroSubheadline:
+            (json['heroSubheadline'] ?? json['hero_subheadline']) as String?,
+        heroImage: (json['heroImage'] ?? json['hero_image']) as String?,
+        heroCta: (json['heroCta'] ?? json['hero_cta']) as String?,
+        heroBadge: (json['heroBadge'] ?? json['hero_badge']) as String?,
+        heroTrustText:
+            (json['heroTrustText'] ?? json['hero_trust_text']) as String?,
+        primaryColor:
+            (json['primaryColor'] ?? json['primary_color']) as String?,
+        metaTitle: (json['metaTitle'] ?? json['meta_title']) as String?,
+        metaDescription:
+            (json['metaDescription'] ?? json['meta_description']) as String?,
+        createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
+        raw: json,
+      );
+
+  final String id;
+  final String slug;
+  final String title;
+  final bool isActive;
+  final String? heroHeadline;
+  final String? heroSubheadline;
+  final String? heroImage;
+  final String? heroCta;
+  final String? heroBadge;
+  final String? heroTrustText;
+  final String? primaryColor;
+  final String? metaTitle;
+  final String? metaDescription;
+  final DateTime? createdAt;
+
+  /// Full server payload — kept so PUT requests can preserve fields the
+  /// mobile editor doesn't surface (features/testimonials/faq/sections).
+  /// The save flow merges `raw` with the edited core fields before sending.
+  final Map<String, dynamic> raw;
+}
+
+class LandingPagesApi {
+  LandingPagesApi(this._api);
+  final AkhiyanApi _api;
+
+  /// `GET /landing-pages` — returns a flat array (no envelope) per the
+  /// admin handler. Sorted desc by createdAt server-side.
+  Future<List<LandingPage>> list() async {
+    final res = await _api.request('GET', '/landing-pages');
+    final list = (res is List ? res : (res['data'] as List? ?? [])) as List;
+    return list
+        .map((e) => LandingPage.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<LandingPage> detail(String id) async {
+    final res = await _api.request('GET', '/landing-pages/$id');
+    final data = res is Map<String, dynamic>
+        ? (res['data'] is Map ? res['data'] as Map<String, dynamic> : res)
+        : <String, dynamic>{};
+    return LandingPage.fromJson(data);
+  }
+
+  /// Update the core fields. Other fields (features, testimonials, etc.)
+  /// are preserved from [base.raw] so a mobile save doesn't wipe rich
+  /// content the web admin authored.
+  Future<LandingPage> update(
+    String id, {
+    required LandingPage base,
+    String? title,
+    String? slug,
+    bool? isActive,
+    String? heroHeadline,
+    String? heroSubheadline,
+    String? heroImage,
+    String? heroCta,
+    String? heroBadge,
+    String? heroTrustText,
+    String? primaryColor,
+    String? metaTitle,
+    String? metaDescription,
+  }) async {
+    final body = _buildLandingPagePayload(
+      base: base,
+      title: title,
+      slug: slug,
+      isActive: isActive,
+      heroHeadline: heroHeadline,
+      heroSubheadline: heroSubheadline,
+      heroImage: heroImage,
+      heroCta: heroCta,
+      heroBadge: heroBadge,
+      heroTrustText: heroTrustText,
+      primaryColor: primaryColor,
+      metaTitle: metaTitle,
+      metaDescription: metaDescription,
+    );
+    final res = await _api.request('PUT', '/landing-pages/$id', body: body);
+    final data = res is Map<String, dynamic>
+        ? (res['data'] is Map ? res['data'] as Map<String, dynamic> : res)
+        : <String, dynamic>{};
+    return LandingPage.fromJson(data);
+  }
+
+  Future<LandingPage> create({
+    required String title,
+    String? slug,
+    bool isActive = true,
+    String? heroHeadline,
+    String? heroSubheadline,
+    String? heroImage,
+    String? heroCta,
+    String? primaryColor,
+  }) async {
+    final res = await _api.request('POST', '/landing-pages', body: {
+      'title': title,
+      if (slug != null && slug.isNotEmpty) 'slug': slug,
+      'is_active': isActive,
+      if (heroHeadline != null) 'hero_headline': heroHeadline,
+      if (heroSubheadline != null) 'hero_subheadline': heroSubheadline,
+      if (heroImage != null) 'hero_image': heroImage,
+      if (heroCta != null) 'hero_cta': heroCta,
+      if (primaryColor != null) 'primary_color': primaryColor,
+    });
+    final data = res is Map<String, dynamic>
+        ? (res['data'] is Map ? res['data'] as Map<String, dynamic> : res)
+        : <String, dynamic>{};
+    return LandingPage.fromJson(data);
+  }
+
+  Future<void> delete(String id) async {
+    await _api.request('DELETE', '/landing-pages/$id');
+  }
+}
+
+/// Build the snake_case PUT payload. Walks `base.raw` so anything the
+/// mobile editor doesn't expose (features array, testimonials array, etc.)
+/// rides through unchanged. Returns a NEW map — never mutates `base.raw`.
+Map<String, dynamic> _buildLandingPagePayload({
+  required LandingPage base,
+  String? title,
+  String? slug,
+  bool? isActive,
+  String? heroHeadline,
+  String? heroSubheadline,
+  String? heroImage,
+  String? heroCta,
+  String? heroBadge,
+  String? heroTrustText,
+  String? primaryColor,
+  String? metaTitle,
+  String? metaDescription,
+}) {
+  // Snake-case copy of the original payload as the starting point. We
+  // re-key from camelCase to snake_case because the schema validation on
+  // the server expects snake_case keys (it accepts both, but snake is the
+  // canonical wire format).
+  final out = <String, dynamic>{};
+
+  void copy(String camel, String snake) {
+    if (base.raw.containsKey(snake)) {
+      out[snake] = base.raw[snake];
+    } else if (base.raw.containsKey(camel)) {
+      out[snake] = base.raw[camel];
+    }
+  }
+
+  // Pass-through rich JSON fields verbatim.
+  for (final entry in const [
+    ('problemTitle', 'problem_title'),
+    ('problemPoints', 'problem_points'),
+    ('productsTitle', 'products_title'),
+    ('productsSub', 'products_subtitle'),
+    ('featuresTitle', 'features_title'),
+    ('featuresImage', 'features_image'),
+    ('features', 'features'),
+    ('testimonialsTitle', 'testimonials_title'),
+    ('testimonialsMode', 'testimonials_mode'),
+    ('testimonials', 'testimonials'),
+    ('howItWorksTitle', 'how_it_works_title'),
+    ('howItWorksSub', 'how_it_works_subtitle'),
+    ('howItWorks', 'how_it_works'),
+    ('faqTitle', 'faq_title'),
+    ('faq', 'faq'),
+    ('products', 'products'),
+    ('checkoutTitle', 'checkout_title'),
+    ('checkoutSubtitle', 'checkout_subtitle'),
+    ('checkoutBtnText', 'checkout_btn_text'),
+    ('customShipping', 'custom_shipping'),
+    ('shippingCost', 'shipping_cost'),
+    ('showEmail', 'show_email'),
+    ('showCity', 'show_city'),
+    ('guaranteeText', 'guarantee_text'),
+    ('successMessage', 'success_message'),
+    ('whatsapp', 'whatsapp'),
+    ('contactMode', 'contact_mode'),
+    ('sectionVisibility', 'section_visibility'),
+    ('heroVideoAutoplay', 'hero_video_autoplay'),
+  ]) {
+    copy(entry.$1, entry.$2);
+  }
+
+  // Core editable fields — overlay edits on top of the passthrough copy.
+  out['title'] = title ?? base.title;
+  out['slug'] = slug ?? base.slug;
+  out['is_active'] = isActive ?? base.isActive;
+  out['hero_headline'] = heroHeadline ?? base.heroHeadline;
+  out['hero_subheadline'] = heroSubheadline ?? base.heroSubheadline;
+  out['hero_image'] = heroImage ?? base.heroImage;
+  out['hero_cta'] = heroCta ?? base.heroCta;
+  out['hero_badge'] = heroBadge ?? base.heroBadge;
+  out['hero_trust_text'] = heroTrustText ?? base.heroTrustText;
+  out['primary_color'] = primaryColor ?? base.primaryColor ?? '#0f5931';
+  out['meta_title'] = metaTitle ?? base.metaTitle;
+  out['meta_description'] = metaDescription ?? base.metaDescription;
+  return out;
+}
+
+// =============================================================================
+// Product Feeds — shared defaults + read-only stats.
+// =============================================================================
+
+class FeedDefaults {
+  const FeedDefaults({
+    this.brand,
+    this.condition,
+    this.googleProductCategory,
+    this.siteUrl,
+  });
+
+  factory FeedDefaults.fromJson(Map<String, dynamic> json) => FeedDefaults(
+        brand: json['brand'] as String?,
+        condition: json['condition'] as String?,
+        googleProductCategory:
+            (json['google_product_category'] ?? json['googleProductCategory'])
+                as String?,
+        siteUrl: (json['site_url'] ?? json['siteUrl']) as String?,
+      );
+
+  final String? brand;
+  final String? condition;
+  final String? googleProductCategory;
+  final String? siteUrl;
+}
+
+class FeedStats {
+  const FeedStats({
+    this.rowsInFeed = 0,
+    this.activeProducts = 0,
+    this.totalProducts = 0,
+    this.activeFlashSales = 0,
+    this.inStock = 0,
+    this.outOfStock = 0,
+    this.onSale = 0,
+  });
+
+  factory FeedStats.fromJson(Map<String, dynamic> json) => FeedStats(
+        rowsInFeed: (json['rowsInFeed'] ?? 0) as int,
+        activeProducts: (json['activeProducts'] ?? 0) as int,
+        totalProducts: (json['totalProducts'] ?? 0) as int,
+        activeFlashSales: (json['activeFlashSales'] ?? 0) as int,
+        inStock: (json['inStock'] ?? 0) as int,
+        outOfStock: (json['outOfStock'] ?? 0) as int,
+        onSale: (json['onSale'] ?? 0) as int,
+      );
+
+  final int rowsInFeed;
+  final int activeProducts;
+  final int totalProducts;
+  final int activeFlashSales;
+  final int inStock;
+  final int outOfStock;
+  final int onSale;
+}
+
+class FeedConfig {
+  const FeedConfig({required this.defaults, required this.stats});
+
+  factory FeedConfig.fromJson(Map<String, dynamic> json) => FeedConfig(
+        defaults:
+            FeedDefaults.fromJson((json['defaults'] as Map<String, dynamic>?) ?? {}),
+        stats: FeedStats.fromJson((json['stats'] as Map<String, dynamic>?) ?? {}),
+      );
+
+  final FeedDefaults defaults;
+  final FeedStats stats;
+}
+
+class FeedsApi {
+  FeedsApi(this._api);
+  final AkhiyanApi _api;
+
+  Future<FeedConfig> fetch() async {
+    final res = await _api.request('GET', '/feeds');
+    final data = res is Map<String, dynamic>
+        ? (res['data'] is Map ? res['data'] as Map<String, dynamic> : res)
+        : <String, dynamic>{};
+    return FeedConfig.fromJson(data);
+  }
+
+  /// Returns the new defaults shape after save by re-fetching. The PUT
+  /// response body is just `{ message: 'Saved' }` — server doesn't echo
+  /// the full payload back, so we round-trip to keep the UI in sync.
+  Future<FeedConfig> save({
+    String? brand,
+    String? condition,
+    String? googleProductCategory,
+    String? siteUrl,
+  }) async {
+    await _api.request('PUT', '/feeds', body: {
+      if (brand != null) 'brand': brand,
+      if (condition != null) 'condition': condition,
+      if (googleProductCategory != null)
+        'google_product_category': googleProductCategory,
+      if (siteUrl != null) 'site_url': siteUrl,
+    });
+    return fetch();
+  }
+}
+
+// =============================================================================
+// Admin settings — unified key/value store backing every settings section
+// in the dashboard.
+// =============================================================================
+
+/// Sentinel the backend uses to mask secrets (SMTP password, Pathao secret,
+/// Steadfast keys, FB CAPI token, …) on GET. The Flutter editor renders any
+/// field whose value matches this with a "Saved (hidden)" placeholder, and
+/// skips it on save so we never overwrite the real secret with the mask.
+const kSecretMask = '••••••••';
+
+class AdminSettingsApi {
+  AdminSettingsApi(this._api);
+  final AkhiyanApi _api;
+
+  /// Returns every site_setting row as a flat key→value map. Sensitive
+  /// keys come back as [kSecretMask] (write-only secrets).
+  Future<Map<String, String?>> fetch() async {
+    final res = await _api.request('GET', '/admin/settings');
+    if (res is! Map<String, dynamic>) return const {};
+    return res.map((k, v) => MapEntry(k, v?.toString()));
+  }
+
+  /// Save a partial map of changes. Keys not in the map are left untouched
+  /// on the server. Values equal to [kSecretMask] are stripped before
+  /// sending — the server also ignores them as a second line of defence,
+  /// but we filter client-side too to keep the request small.
+  Future<void> save(Map<String, String?> changes) async {
+    final body = <String, String?>{
+      for (final e in changes.entries)
+        if (e.value != kSecretMask) e.key: e.value,
+    };
+    if (body.isEmpty) return;
+    await _api.request('PUT', '/admin/settings', body: body);
   }
 }
 
