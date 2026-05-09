@@ -45,7 +45,7 @@ class PageLoadingOverlay extends StatelessWidget {
               const SizedBox(width: AppSpacing.md - 4),
               Text(
                 'Loading page $targetPage...',
-                style: AppTypography.bodyMd.copyWith(
+                style: context.bodyMd.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.onSurface,
                 ),

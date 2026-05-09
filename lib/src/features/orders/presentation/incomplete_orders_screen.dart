@@ -78,7 +78,7 @@ class _IncompleteOrdersScreenState
         scrolledUnderElevation: 1,
         title: Text(
           'Incomplete Orders',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -135,7 +135,7 @@ class _IncompleteOrdersList extends StatelessWidget {
             q.isEmpty
                 ? 'No incomplete orders right now.'
                 : 'No incomplete orders match "$query"',
-            style: AppTypography.bodyMd
+            style: context.bodyMd
                 .copyWith(color: AppColors.onSurfaceVariant),
           ),
         ),
@@ -203,7 +203,7 @@ class _OrderRow extends StatelessWidget {
                       children: [
                         Text(
                           displayId,
-                          style: AppTypography.h3.copyWith(
+                          style: context.h3.copyWith(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             color: AppColors.onBackground,
@@ -218,7 +218,7 @@ class _OrderRow extends StatelessWidget {
                       order.customerName.isEmpty
                           ? '(no name)'
                           : order.customerName,
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.outline,
                         fontSize: 12,
                       ),
@@ -231,7 +231,7 @@ class _OrderRow extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Text(
                 '৳ ${_formatTaka(order.total)}',
-                style: AppTypography.h3.copyWith(
+                style: context.h3.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,
@@ -286,7 +286,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: fg,
           fontWeight: FontWeight.w800,
           fontSize: 10,

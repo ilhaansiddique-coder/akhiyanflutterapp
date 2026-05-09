@@ -41,7 +41,7 @@ class _LandingPagesScreenState extends ConsumerState<LandingPagesScreen> {
         scrolledUnderElevation: 1,
         title: Text(
           'Landing Pages',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -123,7 +123,7 @@ class _PagesList extends StatelessWidget {
             q.isEmpty
                 ? 'No landing pages yet. Tap + to create one.'
                 : 'No pages match "$query"',
-            style: AppTypography.bodyMd
+            style: context.bodyMd
                 .copyWith(color: AppColors.onSurfaceVariant),
           ),
         ),
@@ -178,7 +178,7 @@ class _PageCard extends StatelessWidget {
                   children: [
                     Text(
                       page.title.isEmpty ? '(untitled)' : page.title,
-                      style: AppTypography.h3.copyWith(
+                      style: context.h3.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.onBackground,
@@ -189,7 +189,7 @@ class _PageCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '/${page.slug}',
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.outline,
                         fontSize: 12,
                       ),
@@ -200,7 +200,7 @@ class _PageCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         page.heroHeadline!,
-                        style: AppTypography.bodySm.copyWith(
+                        style: context.bodySm.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
@@ -241,7 +241,7 @@ class _ActiveBadge extends StatelessWidget {
       ),
       child: Text(
         active ? 'LIVE' : 'DRAFT',
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: fg,
           fontWeight: FontWeight.w800,
           fontSize: 10,
@@ -317,7 +317,7 @@ class _NewLandingPageSheetState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('New Landing Page',
-              style: AppTypography.h3
+              style: context.h3
                   .copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: AppSpacing.md),
           TextField(
@@ -339,7 +339,7 @@ class _NewLandingPageSheetState
           if (_error != null) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(_error!,
-                style: AppTypography.bodySm
+                style: context.bodySm
                     .copyWith(color: AppColors.error)),
           ],
           const SizedBox(height: AppSpacing.md),

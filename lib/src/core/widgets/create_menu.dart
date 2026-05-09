@@ -98,7 +98,7 @@ class _CreateMenuSheet extends StatelessWidget {
               padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.md),
               child: Text(
                 'Create',
-                style: AppTypography.h2.copyWith(
+                style: context.h2.copyWith(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
@@ -165,14 +165,14 @@ class _CreateTile extends StatelessWidget {
                   children: [
                     Text(
                       item.label,
-                      style: AppTypography.bodyMd.copyWith(
+                      style: context.bodyMd.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       item.subtitle,
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
                     ),

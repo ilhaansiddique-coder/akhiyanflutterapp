@@ -100,7 +100,7 @@ abstract class SettingsFormState<T extends ConsumerStatefulWidget>
         });
       },
       title: Text(label,
-          style: AppTypography.bodyMd.copyWith(
+          style: context.bodyMd.copyWith(
               fontSize: 14, fontWeight: FontWeight.w600)),
     );
   }
@@ -258,7 +258,7 @@ abstract class SettingsFormState<T extends ConsumerStatefulWidget>
         scrolledUnderElevation: 1,
         title: Text(
           screenTitle,
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -273,7 +273,7 @@ abstract class SettingsFormState<T extends ConsumerStatefulWidget>
             child: Text(
               'Could not load settings.\n$e',
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMd
+              style: context.bodyMd
                   .copyWith(color: AppColors.onSurfaceVariant),
             ),
           ),
@@ -322,7 +322,7 @@ abstract class SettingsFormState<T extends ConsumerStatefulWidget>
                               const EdgeInsets.only(right: AppSpacing.sm),
                           child: Text(
                             '${_dirty.length} unsaved',
-                            style: AppTypography.bodySm.copyWith(
+                            style: context.bodySm.copyWith(
                                 color: AppColors.outline, fontSize: 12),
                           ),
                         ),
@@ -401,7 +401,7 @@ class SettingsCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: AppTypography.h3.copyWith(
+                  style: context.h3.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.onBackground,
@@ -413,7 +413,7 @@ class SettingsCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: AppTypography.bodySm.copyWith(
+            style: context.bodySm.copyWith(
                 color: AppColors.outline, fontSize: 12),
           ),
           const SizedBox(height: AppSpacing.md - 2),

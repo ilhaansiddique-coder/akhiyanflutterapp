@@ -36,7 +36,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         scrolledUnderElevation: 1,
         title: Text(
           'Brands',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -90,7 +90,7 @@ class _BrandsList extends StatelessWidget {
         child: Center(
           child: Text(
             q.isEmpty ? 'No brands yet' : 'No brands match "$query"',
-            style: AppTypography.bodyMd
+            style: context.bodyMd
                 .copyWith(color: AppColors.onSurfaceVariant),
           ),
         ),
@@ -145,7 +145,7 @@ class _BrandCard extends StatelessWidget {
                   children: [
                     Text(
                       brand.name.isEmpty ? '(unnamed)' : brand.name,
-                      style: AppTypography.h3.copyWith(
+                      style: context.h3.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.onBackground,
@@ -156,7 +156,7 @@ class _BrandCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       brand.slug,
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.outline,
                         fontSize: 12,
                       ),

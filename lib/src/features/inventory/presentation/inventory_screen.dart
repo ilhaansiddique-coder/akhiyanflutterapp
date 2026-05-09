@@ -146,7 +146,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text('Stock Levels',
-                    style: AppTypography.h3.copyWith(fontSize: 18)),
+                    style: context.h3.copyWith(fontSize: 18)),
                 const SizedBox(height: AppSpacing.sm),
                 if (items.isEmpty)
                   Padding(
@@ -154,7 +154,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                     child: Center(
                       child: Text(
                         'No inventory data yet',
-                        style: AppTypography.bodyMd.copyWith(
+                        style: context.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
@@ -247,7 +247,7 @@ class _InventoryStat extends StatelessWidget {
                 color: color,
               )),
           Text(label,
-              style: AppTypography.caption.copyWith(
+              style: context.caption.copyWith(
                 color: AppColors.onSurfaceVariant,
                 fontWeight: FontWeight.w700,
                 fontSize: 11,
@@ -302,12 +302,12 @@ class _InventoryRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item.name,
-                    style: AppTypography.bodyMd
+                    style: context.bodyMd
                         .copyWith(fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 Text(item.slug,
-                    style: AppTypography.caption
+                    style: context.caption
                         .copyWith(color: AppColors.onSurfaceVariant)),
               ],
             ),
@@ -325,7 +325,7 @@ class _InventoryRow extends StatelessWidget {
                 ),
               ),
               Text('units',
-                  style: AppTypography.caption
+                  style: context.caption
                       .copyWith(color: AppColors.onSurfaceVariant)),
             ],
           ),

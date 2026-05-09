@@ -67,11 +67,11 @@ class ComingSoonScreen extends StatelessWidget {
                 child: Icon(icon, size: 40, color: AppColors.primaryFixed),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text(title, style: AppTypography.h2),
+              Text(title, style: context.h2),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'This screen is being ported from the Stitch prototype.',
-                style: AppTypography.bodyMd
+                style: context.bodyMd
                     .copyWith(color: AppColors.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),

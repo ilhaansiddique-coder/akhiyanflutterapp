@@ -33,7 +33,7 @@ class ListSearchField extends StatelessWidget {
             const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
         filled: true,
         fillColor: AppColors.surfaceContainerLowest,
-        hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
+        hintStyle: context.bodyMd.copyWith(color: AppColors.outline),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.medium),
           borderSide: const BorderSide(color: AppColors.outlineVariant),
@@ -117,7 +117,7 @@ class ListCountPill extends StatelessWidget {
       ),
       child: Text(
         '$count',
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: fg,
           fontWeight: FontWeight.w800,
           fontSize: 11,

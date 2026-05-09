@@ -35,7 +35,7 @@ class CourierScreen extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           Text('Connected Couriers',
-              style: AppTypography.h3.copyWith(fontSize: 18)),
+              style: context.h3.copyWith(fontSize: 18)),
           const SizedBox(height: AppSpacing.sm),
           for (final c in const [
             ('Pathao', true, 142, '94%'),
@@ -79,7 +79,7 @@ class CourierScreen extends StatelessWidget {
                           Row(
                             children: [
                               Text(c.$1,
-                                  style: AppTypography.bodyMd
+                                  style: context.bodyMd
                                       .copyWith(fontWeight: FontWeight.w700)),
                               const SizedBox(width: AppSpacing.sm),
                               Container(
@@ -94,7 +94,7 @@ class CourierScreen extends StatelessWidget {
                                 ),
                                 child: Text(
                                   c.$2 ? 'CONNECTED' : 'DISCONNECTED',
-                                  style: AppTypography.caption.copyWith(
+                                  style: context.caption.copyWith(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
                                     color: c.$2
@@ -108,7 +108,7 @@ class CourierScreen extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                               '${c.$3} active shipments • ${c.$4} on-time rate',
-                              style: AppTypography.bodySm.copyWith(
+                              style: context.bodySm.copyWith(
                                 color: AppColors.onSurfaceVariant,
                               )),
                         ],

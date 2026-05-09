@@ -40,23 +40,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    final email = _email.text.trim();
+    final password = _password.text;
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Email and password are required.');
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).signIn(
-            email: _email.text.trim(),
-            password: _password.text,
-          );
+      await ref
+          .read(authControllerProvider.notifier)
+          .signIn(email: email, password: password);
       if (!mounted) return;
       // Warm up caches in parallel — don't await; navigation continues
       // immediately so data is loading while the route transition animates.
       // The default range here MUST match dashboard_screen's initial _range
-      // (midnight-today → midnight-today) so the cache key lines up.
+      // (yesterday → yesterday) so the cache key lines up.
       final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final defaultRange = DateTimeRange(start: today, end: today);
+      final yesterday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 1));
+      final defaultRange = DateTimeRange(start: yesterday, end: yesterday);
       // Dashboard + product list — what the dashboard route renders.
       unawaited(ref.read(dashboardDataProvider(defaultRange).future));
       unawaited(ref.read(productsListProvider.notifier).goToPage(1));
@@ -71,12 +81,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       unawaited(ref.read(ordersListProvider.notifier).goToPage(1));
       unawaited(ref.read(customersListProvider.notifier).goToPage(1));
       context.go(AppRoute.dashboard.path);
-    } on ArgumentError {
-      setState(() => _error = 'Email and password are required.');
     } on Object catch (e) {
       // Repository converts everything to a Failure subtype; describeError
       // produces a friendly string without us having to type-test here.
-      setState(() => _error = describeError(e, fallback: 'Login failed. Try again.'));
+      setState(
+        () => _error = describeError(e, fallback: 'Login failed. Try again.'),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -128,7 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'Akhiyan Admin',
-                          style: AppTypography.h1.copyWith(
+                          style: context.h1.copyWith(
                             fontSize: 24,
                             color: AppColors.onBackground,
                             fontWeight: FontWeight.w700,
@@ -137,7 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 2),
                         Text(
                           'Store Management',
-                          style: AppTypography.bodyMd.copyWith(
+                          style: context.bodyMd.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
@@ -162,9 +172,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         if (_error != null) ...[
                           const SizedBox(height: AppSpacing.sm),
-                          Text(_error!,
-                              style: AppTypography.bodySm
-                                  .copyWith(color: AppColors.error)),
+                          Text(
+                            _error!,
+                            style: context.bodySm.copyWith(
+                              color: AppColors.error,
+                            ),
+                          ),
                         ],
                         const SizedBox(height: AppSpacing.lg),
                         SizedBox(
@@ -179,7 +192,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              shadowColor: AppColors.primary.withValues(alpha: 0.3),
+                              shadowColor: AppColors.primary.withValues(
+                                alpha: 0.3,
+                              ),
                             ),
                             child: _loading
                                 ? const SizedBox(
@@ -191,8 +206,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   )
                                 : const Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
                                         'Login',
@@ -225,8 +239,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: AppSpacing.xl),
                   Text(
                     'Trusted by global commerce leaders',
-                    style: AppTypography.bodySm
-                        .copyWith(color: AppColors.outline),
+                    style: context.bodySm.copyWith(
+                      color: AppColors.outline,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const Row(
@@ -279,7 +294,7 @@ class _LoginField extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 6),
           child: Text(
             label,
-            style: AppTypography.bodySm.copyWith(
+            style: context.bodySm.copyWith(
               color: AppColors.onBackground,
               fontWeight: FontWeight.w600,
             ),
@@ -322,7 +337,10 @@ class _LoginField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),

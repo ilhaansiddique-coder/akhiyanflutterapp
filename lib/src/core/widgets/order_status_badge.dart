@@ -67,7 +67,7 @@ class OrderStatusBadge extends StatelessWidget {
       ),
       child: Text(
         m.label,
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: m.fg,
           fontWeight: FontWeight.w700,
           fontSize: 11,

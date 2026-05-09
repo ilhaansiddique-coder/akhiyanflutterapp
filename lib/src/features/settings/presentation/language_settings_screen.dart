@@ -156,7 +156,7 @@ class _LanguageRadioCard extends StatelessWidget {
                     children: [
                       Text(
                         option.title,
-                        style: AppTypography.h3.copyWith(
+                        style: context.h3.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                           color: AppColors.onBackground,
@@ -165,7 +165,7 @@ class _LanguageRadioCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: AppTypography.bodySm.copyWith(
+                        style: context.bodySm.copyWith(
                           color: AppColors.outline,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -229,7 +229,7 @@ class _FlagChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           fontSize: 10,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.6,

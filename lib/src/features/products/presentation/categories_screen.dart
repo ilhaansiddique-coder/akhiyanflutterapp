@@ -40,7 +40,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
         scrolledUnderElevation: 1,
         title: Text(
           'Categories',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -96,7 +96,7 @@ class _CategoriesList extends StatelessWidget {
             q.isEmpty
                 ? 'No categories yet'
                 : 'No categories match "$query"',
-            style: AppTypography.bodyMd
+            style: context.bodyMd
                 .copyWith(color: AppColors.onSurfaceVariant),
           ),
         ),
@@ -151,7 +151,7 @@ class _CategoryCard extends StatelessWidget {
                   children: [
                     Text(
                       category.name.isEmpty ? '(unnamed)' : category.name,
-                      style: AppTypography.h3.copyWith(
+                      style: context.h3.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.onBackground,
@@ -162,7 +162,7 @@ class _CategoryCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       category.slug,
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.outline,
                         fontSize: 12,
                       ),

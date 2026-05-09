@@ -383,7 +383,7 @@ class _OrderFormScreenState extends ConsumerState<OrderFormScreen> {
                       child: Center(
                         child: Text(
                           'No items yet — tap Add Product',
-                          style: AppTypography.bodySm.copyWith(
+                          style: context.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
@@ -552,7 +552,7 @@ class _SectionCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: AppTypography.h3.copyWith(
+                style: context.h3.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
@@ -622,7 +622,7 @@ class _LineItemRow extends StatelessWidget {
             children: [
               Text(
                 item.displayName,
-                style: AppTypography.bodyMd.copyWith(
+                style: context.bodyMd.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
                 maxLines: 1,
@@ -631,7 +631,7 @@ class _LineItemRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 '৳${item.price.toStringAsFixed(0)} each',
-                style: AppTypography.bodySm.copyWith(
+                style: context.bodySm.copyWith(
                   color: AppColors.onSurfaceVariant,
                 ),
               ),
@@ -675,7 +675,7 @@ class _QuantityStepper extends StatelessWidget {
             child: Text(
               '$value',
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMd.copyWith(
+              style: context.bodyMd.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -704,11 +704,11 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = emphasis
-        ? AppTypography.bodyMd.copyWith(
+        ? context.bodyMd.copyWith(
             fontWeight: FontWeight.w800,
             color: AppColors.primary,
           )
-        : AppTypography.bodyMd.copyWith(color: AppColors.onSurface);
+        : context.bodyMd.copyWith(color: AppColors.onSurface);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -790,7 +790,7 @@ class _ProductPickerSheetState extends ConsumerState<_ProductPickerSheet> {
               ),
               Text(
                 'Add Product',
-                style: AppTypography.h2.copyWith(
+                style: context.h2.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
@@ -930,7 +930,7 @@ class _VariantPickerSheet extends ConsumerWidget {
                       return Center(
                         child: Text(
                           'No variants on this product',
-                          style: AppTypography.bodyMd.copyWith(
+                          style: context.bodyMd.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
@@ -952,7 +952,7 @@ class _VariantPickerSheet extends ConsumerWidget {
                                   children: [
                                     Text(
                                       p.name,
-                                      style: AppTypography.bodyMd.copyWith(
+                                      style: context.bodyMd.copyWith(
                                         fontWeight: FontWeight.w800,
                                       ),
                                       maxLines: 1,
@@ -960,7 +960,7 @@ class _VariantPickerSheet extends ConsumerWidget {
                                     ),
                                     Text(
                                       '${variants.length} variants',
-                                      style: AppTypography.bodySm.copyWith(
+                                      style: context.bodySm.copyWith(
                                         color: AppColors.onSurfaceVariant,
                                       ),
                                     ),

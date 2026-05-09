@@ -125,14 +125,14 @@ class _NotificationCard extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           entry.title,
-                          style: AppTypography.bodyMd.copyWith(
+                          style: context.bodyMd.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                       Text(
                         _relativeTime(entry.receivedAt),
-                        style: AppTypography.caption.copyWith(
+                        style: context.caption.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
@@ -141,7 +141,7 @@ class _NotificationCard extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     entry.body,
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                   ),
@@ -174,7 +174,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               "You're all caught up",
-              style: AppTypography.bodyMd.copyWith(
+              style: context.bodyMd.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -182,7 +182,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               'New orders, status changes, and admin events will appear here as they happen.',
               textAlign: TextAlign.center,
-              style: AppTypography.bodySm.copyWith(
+              style: context.bodySm.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
             ),

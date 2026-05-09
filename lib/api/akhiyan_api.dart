@@ -29,7 +29,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:akhiyan_admin/src/core/api/secure_token_storage.dart' show SecureTokenStorage;
+import 'package:akhiyan_admin/src/core/api/secure_token_storage.dart'
+    show SecureTokenStorage;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 
@@ -38,7 +39,6 @@ import 'package:http/http.dart' as http;
 // =============================================================================
 
 class ApiException implements Exception {
-
   ApiException(this.statusCode, this.message, [this.details, this.raw]);
   final int statusCode;
   final String message;
@@ -102,16 +102,28 @@ class InMemoryTokenStorage implements TokenStorage {
 // =============================================================================
 
 class Pagination {
-
-  Pagination({required this.page, required this.pageSize, required this.total, required this.totalPages});
+  Pagination({
+    required this.page,
+    required this.pageSize,
+    required this.total,
+    required this.totalPages,
+  });
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     final page = (json['page'] ?? json['current_page'] ?? 1) as int;
     final pageSize = (json['pageSize'] ?? json['per_page'] ?? 20) as int;
     final total = (json['total'] ?? 0) as int;
-    final totalPages = (json['totalPages'] ?? json['last_page'] ??
-        (pageSize > 0 ? ((total + pageSize - 1) ~/ pageSize) : 1)) as int;
-    return Pagination(page: page, pageSize: pageSize, total: total, totalPages: totalPages);
+    final totalPages =
+        (json['totalPages'] ??
+                json['last_page'] ??
+                (pageSize > 0 ? ((total + pageSize - 1) ~/ pageSize) : 1))
+            as int;
+    return Pagination(
+      page: page,
+      pageSize: pageSize,
+      total: total,
+      totalPages: totalPages,
+    );
   }
   final int page;
   final int pageSize;
@@ -128,7 +140,6 @@ Pagination _paginationFrom(Map<String, dynamic> res) {
 }
 
 class PaginatedResponse<T> {
-
   PaginatedResponse({required this.data, required this.pagination});
   final List<T> data;
   final Pagination pagination;
@@ -139,25 +150,25 @@ class PaginatedResponse<T> {
 // =============================================================================
 
 class AdminUser {
-
   AdminUser({
     required this.id,
     required this.name,
-    required this.role, this.email,
+    required this.role,
+    this.email,
     this.phone,
     this.avatar,
     this.createdAt,
   });
 
   factory AdminUser.fromJson(Map<String, dynamic> json) => AdminUser(
-        id: json['id'].toString(),
-        name: (json['name'] ?? '') as String,
-        email: json['email'] as String?,
-        phone: json['phone'] as String?,
-        role: json['role'] as String? ?? 'admin',
-        avatar: json['avatar'] as String?,
-        createdAt: _parseDate(json['createdAt']),
-      );
+    id: json['id'].toString(),
+    name: (json['name'] ?? '') as String,
+    email: json['email'] as String?,
+    phone: json['phone'] as String?,
+    role: json['role'] as String? ?? 'admin',
+    avatar: json['avatar'] as String?,
+    createdAt: _parseDate(json['createdAt']),
+  );
   final String id;
   final String name;
   final String? email;
@@ -171,26 +182,24 @@ class AdminUser {
 }
 
 class LoginResult {
-
-  LoginResult({
-    required this.accessToken,
-    required this.user,
-  });
+  LoginResult({required this.accessToken, required this.user});
 
   factory LoginResult.fromJson(Map<String, dynamic> json) => LoginResult(
-        accessToken: json['token'] as String? ?? 'session',
-        user: AdminUser.fromJson(json['user'] as Map<String, dynamic>),
-      );
+    accessToken: json['token'] as String? ?? 'session',
+    user: AdminUser.fromJson(json['user'] as Map<String, dynamic>),
+  );
   final String accessToken;
   final AdminUser user;
 }
 
 class OrderListItem {
-
   OrderListItem({
     required this.id,
     required this.customerName,
-    required this.total, required this.status, required this.paymentMethod, this.customerPhone,
+    required this.total,
+    required this.status,
+    required this.paymentMethod,
+    this.customerPhone,
     this.paymentStatus,
     this.riskScore,
     this.courierSent = false,
@@ -207,20 +216,26 @@ class OrderListItem {
       itemCount = ic;
     } else if (json['items'] is List) {
       itemCount = (json['items'] as List).length;
-    } else if (json['_count'] is Map && (json['_count'] as Map)['items'] is int) {
+    } else if (json['_count'] is Map &&
+        (json['_count'] as Map)['items'] is int) {
       itemCount = (json['_count'] as Map)['items'] as int;
     }
     final risk = (json['riskScore'] ?? json['risk_score']) as int?;
     return OrderListItem(
       id: (json['id'] ?? '').toString(),
-      customerName: (json['customerName'] ?? json['customer_name'] ?? '') as String,
-      customerPhone: (json['customerPhone'] ?? json['customer_phone']) as String?,
+      customerName:
+          (json['customerName'] ?? json['customer_name'] ?? '') as String,
+      customerPhone:
+          (json['customerPhone'] ?? json['customer_phone']) as String?,
       total: ((json['total'] as num?) ?? 0).toDouble(),
       status: (json['status'] as String?) ?? 'pending',
-      paymentMethod: (json['paymentMethod'] ?? json['payment_method'] ?? 'cod') as String,
-      paymentStatus: (json['paymentStatus'] ?? json['payment_status']) as String?,
+      paymentMethod:
+          (json['paymentMethod'] ?? json['payment_method'] ?? 'cod') as String,
+      paymentStatus:
+          (json['paymentStatus'] ?? json['payment_status']) as String?,
       riskScore: risk,
-      courierSent: (json['courierSent'] ?? json['courier_sent'] ?? false) as bool,
+      courierSent:
+          (json['courierSent'] ?? json['courier_sent'] ?? false) as bool,
       itemCount: itemCount,
       flagged: (json['flagged'] as bool?) ?? ((risk ?? 0) >= 70),
       createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
@@ -245,11 +260,7 @@ class OrderListItem {
 /// hex `color` lets the backend customize chip / badge tint per
 /// status without a Flutter release.
 class OrderStatusOption {
-  const OrderStatusOption({
-    required this.key,
-    required this.label,
-    this.color,
-  });
+  const OrderStatusOption({required this.key, required this.label, this.color});
 
   factory OrderStatusOption.fromJson(Map<String, dynamic> json) =>
       OrderStatusOption(
@@ -264,25 +275,27 @@ class OrderStatusOption {
 }
 
 class OrderItem {
-
   OrderItem({
     required this.id,
     required this.orderId,
-    required this.productName, required this.quantity, required this.price, this.productId,
+    required this.productName,
+    required this.quantity,
+    required this.price,
+    this.productId,
     this.variantId,
     this.variantLabel,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) => OrderItem(
-        id: (json['id'] ?? '').toString(),
-        orderId: (json['orderId'] ?? '').toString(),
-        productId: json['productId']?.toString(),
-        productName: (json['productName'] ?? '') as String,
-        variantId: json['variantId']?.toString(),
-        variantLabel: json['variantLabel'] as String?,
-        quantity: (json['quantity'] as int?) ?? 0,
-        price: ((json['price'] as num?) ?? 0).toDouble(),
-      );
+    id: (json['id'] ?? '').toString(),
+    orderId: (json['orderId'] ?? '').toString(),
+    productId: json['productId']?.toString(),
+    productName: (json['productName'] ?? '') as String,
+    variantId: json['variantId']?.toString(),
+    variantLabel: json['variantLabel'] as String?,
+    quantity: (json['quantity'] as int?) ?? 0,
+    price: ((json['price'] as num?) ?? 0).toDouble(),
+  );
   final String id;
   final String orderId;
   final String? productId;
@@ -294,10 +307,19 @@ class OrderItem {
 }
 
 class Order {
-
   Order({
     required this.id,
-    required this.customerName, required this.customerPhone, required this.customerAddress, required this.subtotal, required this.shippingCost, required this.discount, required this.total, required this.status, required this.paymentMethod, required this.paymentStatus, this.userId,
+    required this.customerName,
+    required this.customerPhone,
+    required this.customerAddress,
+    required this.subtotal,
+    required this.shippingCost,
+    required this.discount,
+    required this.total,
+    required this.status,
+    required this.paymentMethod,
+    required this.paymentStatus,
+    this.userId,
     this.customerEmail,
     this.city,
     this.zipCode,
@@ -315,36 +337,36 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
-        id: (json['id'] ?? '').toString(),
-        userId: json['userId']?.toString(),
-        customerName: (json['customerName'] ?? '') as String,
-        customerPhone: (json['customerPhone'] ?? '') as String,
-        customerEmail: json['customerEmail'] as String?,
-        customerAddress: (json['customerAddress'] ?? '') as String,
-        city: json['city'] as String?,
-        zipCode: json['zipCode'] as String?,
-        subtotal: ((json['subtotal'] as num?) ?? 0).toDouble(),
-        shippingCost: ((json['shippingCost'] as num?) ?? 0).toDouble(),
-        discount: ((json['discount'] as num?) ?? 0).toDouble(),
-        total: ((json['total'] as num?) ?? 0).toDouble(),
-        status: (json['status'] as String?) ?? 'pending',
-        paymentMethod: (json['paymentMethod'] ?? 'cod') as String,
-        paymentStatus: (json['paymentStatus'] ?? 'unpaid') as String,
-        transactionId: json['transactionId'] as String?,
-        notes: json['notes'] as String?,
-        courierSent: (json['courierSent'] ?? false) as bool,
-        courierType: json['courierType'] as String?,
-        consignmentId: json['consignmentId'] as String?,
-        courierStatus: json['courierStatus'] as String?,
-        riskScore: json['riskScore'] as int?,
-        flagged: (json['flagged'] as bool?) ??
-            ((json['riskScore'] as int? ?? 0) >= 70),
-        createdAt: _parseDate(json['createdAt']),
-        updatedAt: _parseDate(json['updatedAt']),
-        items: ((json['items'] as List?) ?? [])
-            .map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    id: (json['id'] ?? '').toString(),
+    userId: json['userId']?.toString(),
+    customerName: (json['customerName'] ?? '') as String,
+    customerPhone: (json['customerPhone'] ?? '') as String,
+    customerEmail: json['customerEmail'] as String?,
+    customerAddress: (json['customerAddress'] ?? '') as String,
+    city: json['city'] as String?,
+    zipCode: json['zipCode'] as String?,
+    subtotal: ((json['subtotal'] as num?) ?? 0).toDouble(),
+    shippingCost: ((json['shippingCost'] as num?) ?? 0).toDouble(),
+    discount: ((json['discount'] as num?) ?? 0).toDouble(),
+    total: ((json['total'] as num?) ?? 0).toDouble(),
+    status: (json['status'] as String?) ?? 'pending',
+    paymentMethod: (json['paymentMethod'] ?? 'cod') as String,
+    paymentStatus: (json['paymentStatus'] ?? 'unpaid') as String,
+    transactionId: json['transactionId'] as String?,
+    notes: json['notes'] as String?,
+    courierSent: (json['courierSent'] ?? false) as bool,
+    courierType: json['courierType'] as String?,
+    consignmentId: json['consignmentId'] as String?,
+    courierStatus: json['courierStatus'] as String?,
+    riskScore: json['riskScore'] as int?,
+    flagged:
+        (json['flagged'] as bool?) ?? ((json['riskScore'] as int? ?? 0) >= 70),
+    createdAt: _parseDate(json['createdAt']),
+    updatedAt: _parseDate(json['updatedAt']),
+    items: ((json['items'] as List?) ?? [])
+        .map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
   final String id;
   final String? userId;
   final String customerName;
@@ -374,12 +396,13 @@ class Order {
 }
 
 class Product {
-
   Product({
     required this.id,
     required this.name,
     required this.slug,
-    required this.price, required this.image, this.categoryId,
+    required this.price,
+    required this.image,
+    this.categoryId,
     this.brandId,
     this.description,
     this.originalPrice,
@@ -466,7 +489,6 @@ class Product {
 }
 
 class ProductVariant {
-
   ProductVariant({
     required this.id,
     required this.productId,
@@ -511,7 +533,6 @@ class ProductVariant {
 }
 
 class Category {
-
   Category({
     required this.id,
     required this.name,
@@ -524,16 +545,16 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) => Category(
-        id: (json['id'] ?? '').toString(),
-        name: (json['name'] as String?) ?? '',
-        slug: (json['slug'] as String?) ?? '',
-        image: json['image'] as String?,
-        description: json['description'] as String?,
-        sortOrder: (json['sortOrder'] ?? json['sort_order'] ?? 0) as int,
-        isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
-        productsCount:
-            (json['productsCount'] ?? json['products_count'] ?? 0) as int,
-      );
+    id: (json['id'] ?? '').toString(),
+    name: (json['name'] as String?) ?? '',
+    slug: (json['slug'] as String?) ?? '',
+    image: json['image'] as String?,
+    description: json['description'] as String?,
+    sortOrder: (json['sortOrder'] ?? json['sort_order'] ?? 0) as int,
+    isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
+    productsCount:
+        (json['productsCount'] ?? json['products_count'] ?? 0) as int,
+  );
   final String id;
   final String name;
   final String slug;
@@ -545,7 +566,6 @@ class Category {
 }
 
 class Brand {
-
   Brand({
     required this.id,
     required this.name,
@@ -556,14 +576,14 @@ class Brand {
   });
 
   factory Brand.fromJson(Map<String, dynamic> json) => Brand(
-        id: (json['id'] ?? '').toString(),
-        name: (json['name'] as String?) ?? '',
-        slug: (json['slug'] as String?) ?? '',
-        logo: json['logo'] as String?,
-        isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
-        productsCount:
-            (json['productsCount'] ?? json['products_count'] ?? 0) as int,
-      );
+    id: (json['id'] ?? '').toString(),
+    name: (json['name'] as String?) ?? '',
+    slug: (json['slug'] as String?) ?? '',
+    logo: json['logo'] as String?,
+    isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
+    productsCount:
+        (json['productsCount'] ?? json['products_count'] ?? 0) as int,
+  );
   final String id;
   final String name;
   final String slug;
@@ -573,7 +593,6 @@ class Brand {
 }
 
 class CustomerListItem {
-
   CustomerListItem({
     required this.id,
     required this.name,
@@ -589,10 +608,8 @@ class CustomerListItem {
     // Customers can come from users table, order rollups, or search endpoint —
     // names live in `name`, `customerName`, or nested under `user`.
     final user = json['user'] as Map<String, dynamic>?;
-    final name = (json['name'] ??
-        json['customerName'] ??
-        user?['name'] ??
-        '') as String;
+    final name =
+        (json['name'] ?? json['customerName'] ?? user?['name'] ?? '') as String;
     return CustomerListItem(
       id: (json['id'] ?? user?['id'] ?? '').toString(),
       name: name,
@@ -615,25 +632,28 @@ class CustomerListItem {
 }
 
 class CustomerStats {
-
-  CustomerStats({required this.ordersCount, required this.totalSpent, this.lastOrderAt});
+  CustomerStats({
+    required this.ordersCount,
+    required this.totalSpent,
+    this.lastOrderAt,
+  });
 
   factory CustomerStats.fromJson(Map<String, dynamic> json) => CustomerStats(
-        ordersCount: (json['ordersCount'] as int?) ?? 0,
-        totalSpent: ((json['totalSpent'] as num?) ?? 0).toDouble(),
-        lastOrderAt: _parseDate(json['lastOrderAt']),
-      );
+    ordersCount: (json['ordersCount'] as int?) ?? 0,
+    totalSpent: ((json['totalSpent'] as num?) ?? 0).toDouble(),
+    lastOrderAt: _parseDate(json['lastOrderAt']),
+  );
   final int ordersCount;
   final double totalSpent;
   final DateTime? lastOrderAt;
 }
 
 class CustomerDetail {
-
   CustomerDetail({
     required this.id,
     required this.name,
-    required this.stats, this.email,
+    required this.stats,
+    this.email,
     this.phone,
     this.address,
     this.avatar,
@@ -642,18 +662,20 @@ class CustomerDetail {
   });
 
   factory CustomerDetail.fromJson(Map<String, dynamic> json) => CustomerDetail(
-        id: (json['id'] ?? '').toString(),
-        name: (json['name'] ?? '') as String,
-        email: json['email'] as String?,
-        phone: json['phone'] as String?,
-        address: json['address'] as String?,
-        avatar: json['avatar'] as String?,
-        createdAt: _parseDate(json['createdAt']),
-        stats: CustomerStats.fromJson((json['stats'] as Map<String, dynamic>?) ?? const {}),
-        orders: ((json['orders'] as List?) ?? [])
-            .map((e) => OrderListItem.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    id: (json['id'] ?? '').toString(),
+    name: (json['name'] ?? '') as String,
+    email: json['email'] as String?,
+    phone: json['phone'] as String?,
+    address: json['address'] as String?,
+    avatar: json['avatar'] as String?,
+    createdAt: _parseDate(json['createdAt']),
+    stats: CustomerStats.fromJson(
+      (json['stats'] as Map<String, dynamic>?) ?? const {},
+    ),
+    orders: ((json['orders'] as List?) ?? [])
+        .map((e) => OrderListItem.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
   final String id;
   final String name;
   final String? email;
@@ -666,7 +688,6 @@ class CustomerDetail {
 }
 
 class Coupon {
-
   Coupon({
     required this.id,
     required this.code,
@@ -682,18 +703,18 @@ class Coupon {
   });
 
   factory Coupon.fromJson(Map<String, dynamic> json) => Coupon(
-        id: (json['id'] ?? '').toString(),
-        code: (json['code'] as String?) ?? '',
-        type: (json['type'] as String?) ?? 'percentage',
-        value: ((json['value'] as num?) ?? 0).toDouble(),
-        minOrderAmount: ((json['minOrderAmount'] as num?) ?? 0).toDouble(),
-        maxUses: json['maxUses'] as int?,
-        usedCount: (json['usedCount'] as int?) ?? 0,
-        startsAt: _parseDate(json['startsAt']),
-        expiresAt: _parseDate(json['expiresAt']),
-        isActive: (json['isActive'] as bool?) ?? true,
-        createdAt: _parseDate(json['createdAt']),
-      );
+    id: (json['id'] ?? '').toString(),
+    code: (json['code'] as String?) ?? '',
+    type: (json['type'] as String?) ?? 'percentage',
+    value: ((json['value'] as num?) ?? 0).toDouble(),
+    minOrderAmount: ((json['minOrderAmount'] as num?) ?? 0).toDouble(),
+    maxUses: json['maxUses'] as int?,
+    usedCount: (json['usedCount'] as int?) ?? 0,
+    startsAt: _parseDate(json['startsAt']),
+    expiresAt: _parseDate(json['expiresAt']),
+    isActive: (json['isActive'] as bool?) ?? true,
+    createdAt: _parseDate(json['createdAt']),
+  );
   final String id;
   final String code;
   final String type; // percentage | fixed
@@ -710,27 +731,27 @@ class Coupon {
 }
 
 class FlashSale {
-
   FlashSale({
     required this.id,
     required this.title,
     required this.startsAt,
     required this.endsAt,
     required this.isActive,
-    required this.state, this.productCount = 0,
+    required this.state,
+    this.productCount = 0,
     this.createdAt,
   });
 
   factory FlashSale.fromJson(Map<String, dynamic> json) => FlashSale(
-        id: (json['id'] ?? '').toString(),
-        title: (json['title'] as String?) ?? '',
-        startsAt: _parseDate(json['startsAt']) ?? DateTime.now(),
-        endsAt: _parseDate(json['endsAt']) ?? DateTime.now(),
-        isActive: (json['isActive'] as bool?) ?? true,
-        productCount: (json['productCount'] as int?) ?? 0,
-        state: (json['state'] as String?) ?? 'inactive',
-        createdAt: _parseDate(json['createdAt']),
-      );
+    id: (json['id'] ?? '').toString(),
+    title: (json['title'] as String?) ?? '',
+    startsAt: _parseDate(json['startsAt']) ?? DateTime.now(),
+    endsAt: _parseDate(json['endsAt']) ?? DateTime.now(),
+    isActive: (json['isActive'] as bool?) ?? true,
+    productCount: (json['productCount'] as int?) ?? 0,
+    state: (json['state'] as String?) ?? 'inactive',
+    createdAt: _parseDate(json['createdAt']),
+  );
   final String id;
   final String title;
   final DateTime startsAt;
@@ -742,7 +763,6 @@ class FlashSale {
 }
 
 class Shortlink {
-
   Shortlink({
     required this.id,
     required this.slug,
@@ -755,15 +775,17 @@ class Shortlink {
   });
 
   factory Shortlink.fromJson(Map<String, dynamic> json) => Shortlink(
-        id: (json['id'] ?? '').toString(),
-        slug: json['slug'] as String,
-        targetUrl: json['targetUrl'] as String,
-        hits: json['hits'] as int? ?? 0,
-        isActive: json['isActive'] as bool? ?? true,
-        createdAt: _parseDate(json['createdAt']),
-        sevenDayClicks: json['sevenDayClicks'] as int? ?? 0,
-        sparkline: ((json['sparkline'] as List?) ?? []).map((e) => e as int).toList(),
-      );
+    id: (json['id'] ?? '').toString(),
+    slug: json['slug'] as String,
+    targetUrl: json['targetUrl'] as String,
+    hits: json['hits'] as int? ?? 0,
+    isActive: json['isActive'] as bool? ?? true,
+    createdAt: _parseDate(json['createdAt']),
+    sevenDayClicks: json['sevenDayClicks'] as int? ?? 0,
+    sparkline: ((json['sparkline'] as List?) ?? [])
+        .map((e) => e as int)
+        .toList(),
+  );
   final String id;
   final String slug;
   final String targetUrl;
@@ -775,7 +797,6 @@ class Shortlink {
 }
 
 class AdminBanner {
-
   AdminBanner({
     required this.id,
     required this.title,
@@ -792,19 +813,19 @@ class AdminBanner {
   });
 
   factory AdminBanner.fromJson(Map<String, dynamic> json) => AdminBanner(
-        id: (json['id'] ?? '').toString(),
-        title: json['title'] as String,
-        subtitle: json['subtitle'] as String?,
-        description: json['description'] as String?,
-        buttonText: json['buttonText'] as String?,
-        buttonUrl: json['buttonUrl'] as String?,
-        image: json['image'] as String?,
-        gradient: json['gradient'] as String?,
-        emoji: json['emoji'] as String?,
-        position: json['position'] as String? ?? 'hero',
-        sortOrder: json['sortOrder'] as int? ?? 0,
-        isActive: json['isActive'] as bool? ?? true,
-      );
+    id: (json['id'] ?? '').toString(),
+    title: json['title'] as String,
+    subtitle: json['subtitle'] as String?,
+    description: json['description'] as String?,
+    buttonText: json['buttonText'] as String?,
+    buttonUrl: json['buttonUrl'] as String?,
+    image: json['image'] as String?,
+    gradient: json['gradient'] as String?,
+    emoji: json['emoji'] as String?,
+    position: json['position'] as String? ?? 'hero',
+    sortOrder: json['sortOrder'] as int? ?? 0,
+    isActive: json['isActive'] as bool? ?? true,
+  );
   final String id;
   final String title;
   final String? subtitle;
@@ -820,15 +841,19 @@ class AdminBanner {
 }
 
 class BlockedIp {
-
-  BlockedIp({required this.id, required this.ipAddress, this.reason, this.createdAt});
+  BlockedIp({
+    required this.id,
+    required this.ipAddress,
+    this.reason,
+    this.createdAt,
+  });
 
   factory BlockedIp.fromJson(Map<String, dynamic> json) => BlockedIp(
-        id: (json['id'] ?? '').toString(),
-        ipAddress: json['ipAddress'] as String,
-        reason: json['reason'] as String?,
-        createdAt: _parseDate(json['createdAt']),
-      );
+    id: (json['id'] ?? '').toString(),
+    ipAddress: json['ipAddress'] as String,
+    reason: json['reason'] as String?,
+    createdAt: _parseDate(json['createdAt']),
+  );
   final String id;
   final String ipAddress;
   final String? reason;
@@ -836,7 +861,6 @@ class BlockedIp {
 }
 
 class BlockedDevice {
-
   BlockedDevice({
     required this.id,
     required this.fpHash,
@@ -849,15 +873,15 @@ class BlockedDevice {
   });
 
   factory BlockedDevice.fromJson(Map<String, dynamic> json) => BlockedDevice(
-        id: (json['id'] ?? '').toString(),
-        fpHash: json['fpHash'] as String,
-        lastIp: json['lastIp'] as String?,
-        platform: json['platform'] as String?,
-        blockReason: json['blockReason'] as String?,
-        blockedAt: _parseDate(json['blockedAt']),
-        seenCount: json['seenCount'] as int? ?? 0,
-        riskScore: json['riskScore'] as int? ?? 0,
-      );
+    id: (json['id'] ?? '').toString(),
+    fpHash: json['fpHash'] as String,
+    lastIp: json['lastIp'] as String?,
+    platform: json['platform'] as String?,
+    blockReason: json['blockReason'] as String?,
+    blockedAt: _parseDate(json['blockedAt']),
+    seenCount: json['seenCount'] as int? ?? 0,
+    riskScore: json['riskScore'] as int? ?? 0,
+  );
   final String id;
   final String fpHash;
   final String? lastIp;
@@ -869,31 +893,31 @@ class BlockedDevice {
 }
 
 class FlaggedOrder {
-
   FlaggedOrder({
     required this.id,
     required this.customerName,
     required this.customerPhone,
     required this.total,
     required this.status,
-    required this.reason, this.riskScore,
+    required this.reason,
+    this.riskScore,
     this.ip,
     this.fpSeenCount,
     this.createdAt,
   });
 
   factory FlaggedOrder.fromJson(Map<String, dynamic> json) => FlaggedOrder(
-        id: (json['id'] ?? '').toString(),
-        customerName: json['customerName'] as String,
-        customerPhone: json['customerPhone'] as String,
-        total: (json['total'] as num).toDouble(),
-        status: json['status'] as String,
-        riskScore: json['riskScore'] as int?,
-        ip: json['ip'] as String?,
-        fpSeenCount: json['fpSeenCount'] as int?,
-        reason: json['reason'] as String,
-        createdAt: _parseDate(json['createdAt']),
-      );
+    id: (json['id'] ?? '').toString(),
+    customerName: json['customerName'] as String,
+    customerPhone: json['customerPhone'] as String,
+    total: (json['total'] as num).toDouble(),
+    status: json['status'] as String,
+    riskScore: json['riskScore'] as int?,
+    ip: json['ip'] as String?,
+    fpSeenCount: json['fpSeenCount'] as int?,
+    reason: json['reason'] as String,
+    createdAt: _parseDate(json['createdAt']),
+  );
   final String id;
   final String customerName;
   final String customerPhone;
@@ -907,25 +931,25 @@ class FlaggedOrder {
 }
 
 class StaffMember {
-
   StaffMember({
     required this.id,
     required this.name,
-    required this.role, this.email,
+    required this.role,
+    this.email,
     this.phone,
     this.avatar,
     this.createdAt,
   });
 
   factory StaffMember.fromJson(Map<String, dynamic> json) => StaffMember(
-        id: (json['id'] ?? '').toString(),
-        name: json['name'] as String,
-        email: json['email'] as String?,
-        phone: json['phone'] as String?,
-        role: json['role'] as String,
-        avatar: json['avatar'] as String?,
-        createdAt: _parseDate(json['createdAt']),
-      );
+    id: (json['id'] ?? '').toString(),
+    name: json['name'] as String,
+    email: json['email'] as String?,
+    phone: json['phone'] as String?,
+    role: json['role'] as String,
+    avatar: json['avatar'] as String?,
+    createdAt: _parseDate(json['createdAt']),
+  );
   final String id;
   final String name;
   final String? email;
@@ -936,34 +960,35 @@ class StaffMember {
 }
 
 class InventoryItem {
-
   InventoryItem({
     required this.id,
     required this.name,
     required this.slug,
     required this.image,
     required this.stock,
-    required this.price, required this.level, this.unlimitedStock,
+    required this.price,
+    required this.level,
+    this.unlimitedStock,
     this.soldCount = 0,
     this.hasVariations,
     this.variants = const [],
   });
 
   factory InventoryItem.fromJson(Map<String, dynamic> json) => InventoryItem(
-        id: (json['id'] ?? '').toString(),
-        name: json['name'] as String,
-        slug: json['slug'] as String,
-        image: json['image'] as String,
-        stock: json['stock'] as int,
-        unlimitedStock: json['unlimitedStock'] as bool?,
-        soldCount: json['soldCount'] as int? ?? 0,
-        price: (json['price'] as num).toDouble(),
-        hasVariations: json['hasVariations'] as bool?,
-        level: json['level'] as String,
-        variants: ((json['variants'] as List?) ?? [])
-            .map((e) => ProductVariant.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+    id: (json['id'] ?? '').toString(),
+    name: json['name'] as String,
+    slug: json['slug'] as String,
+    image: json['image'] as String,
+    stock: json['stock'] as int,
+    unlimitedStock: json['unlimitedStock'] as bool?,
+    soldCount: json['soldCount'] as int? ?? 0,
+    price: (json['price'] as num).toDouble(),
+    hasVariations: json['hasVariations'] as bool?,
+    level: json['level'] as String,
+    variants: ((json['variants'] as List?) ?? [])
+        .map((e) => ProductVariant.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
   final String id;
   final String name;
   final String slug;
@@ -979,7 +1004,8 @@ class InventoryItem {
 
 class InventorySummary {
   InventorySummary({required this.criticalCount, required this.lowThreshold});
-  factory InventorySummary.fromJson(Map<String, dynamic> json) => InventorySummary(
+  factory InventorySummary.fromJson(Map<String, dynamic> json) =>
+      InventorySummary(
         criticalCount: json['criticalCount'] as int,
         lowThreshold: json['lowThreshold'] as int,
       );
@@ -988,7 +1014,11 @@ class InventorySummary {
 }
 
 class InventoryResult {
-  InventoryResult({required this.data, required this.pagination, required this.summary});
+  InventoryResult({
+    required this.data,
+    required this.pagination,
+    required this.summary,
+  });
   final List<InventoryItem> data;
   final Pagination pagination;
   final InventorySummary summary;
@@ -998,16 +1028,13 @@ class InventoryResult {
 
 class StatCard {
   StatCard({required this.value, this.deltaPct});
-  factory StatCard.fromJson(Map<String, dynamic> json) => StatCard(
-        value: json['value'] as num,
-        deltaPct: json['deltaPct'] as int?,
-      );
+  factory StatCard.fromJson(Map<String, dynamic> json) =>
+      StatCard(value: json['value'] as num, deltaPct: json['deltaPct'] as int?);
   final num value;
   final int? deltaPct;
 }
 
 class DashboardCards {
-
   DashboardCards({
     required this.todayOrders,
     required this.todayRevenue,
@@ -1016,19 +1043,232 @@ class DashboardCards {
   });
 
   factory DashboardCards.fromJson(Map<String, dynamic> json) => DashboardCards(
-        todayOrders: StatCard.fromJson(json['todayOrders'] as Map<String, dynamic>),
-        todayRevenue: StatCard.fromJson(json['todayRevenue'] as Map<String, dynamic>),
-        pendingOrders: StatCard.fromJson(json['pendingOrders'] as Map<String, dynamic>),
-        lowStockItems: StatCard.fromJson(json['lowStockItems'] as Map<String, dynamic>),
-      );
+    todayOrders: StatCard.fromJson(json['todayOrders'] as Map<String, dynamic>),
+    todayRevenue: StatCard.fromJson(
+      json['todayRevenue'] as Map<String, dynamic>,
+    ),
+    pendingOrders: StatCard.fromJson(
+      json['pendingOrders'] as Map<String, dynamic>,
+    ),
+    lowStockItems: StatCard.fromJson(
+      json['lowStockItems'] as Map<String, dynamic>,
+    ),
+  );
   final StatCard todayOrders;
   final StatCard todayRevenue;
   final StatCard pendingOrders;
   final StatCard lowStockItems;
 }
 
-class TopProductSummary {
+class DashboardStatsSnapshot {
+  DashboardStatsSnapshot({
+    required this.totalOrders,
+    required this.todayOrders,
+    required this.totalRevenue,
+    required this.todayRevenue,
+    required this.totalCustomers,
+    required this.totalProducts,
+    required this.pendingOrders,
+    required this.lowStockCount,
+    required this.cancelledRevenue,
+    required this.shippedOrders,
+    required this.shippedRevenue,
+    required this.todayShipped,
+    required this.todayShippedRevenue,
+    required this.shippedCustomers,
+  });
 
+  factory DashboardStatsSnapshot.fromJson(
+    Map<String, dynamic> json,
+  ) => DashboardStatsSnapshot(
+    totalOrders: ((json['total_orders'] ?? json['totalOrders']) as num? ?? 0)
+        .toInt(),
+    todayOrders: ((json['today_orders'] ?? json['todayOrders']) as num? ?? 0)
+        .toInt(),
+    totalRevenue: ((json['total_revenue'] ?? json['totalRevenue']) as num? ?? 0)
+        .toDouble(),
+    todayRevenue: ((json['today_revenue'] ?? json['todayRevenue']) as num? ?? 0)
+        .toDouble(),
+    totalCustomers:
+        ((json['total_customers'] ?? json['totalCustomers']) as num? ?? 0)
+            .toInt(),
+    totalProducts:
+        ((json['total_products'] ?? json['totalProducts']) as num? ?? 0)
+            .toInt(),
+    pendingOrders:
+        ((json['pending_orders'] ?? json['pendingOrders']) as num? ?? 0)
+            .toInt(),
+    lowStockCount:
+        ((json['low_stock_count'] ??
+                        json['lowStockCount'] ??
+                        json['low_stock'] ??
+                        0)
+                    as num? ??
+                0)
+            .toInt(),
+    cancelledRevenue:
+        ((json['cancelled_revenue'] ?? json['cancelledRevenue']) as num? ?? 0)
+            .toDouble(),
+    shippedOrders:
+        ((json['shipped_orders'] ?? json['shippedOrders']) as num? ?? 0)
+            .toInt(),
+    shippedRevenue:
+        ((json['shipped_revenue'] ?? json['shippedRevenue']) as num? ?? 0)
+            .toDouble(),
+    todayShipped: ((json['today_shipped'] ?? json['todayShipped']) as num? ?? 0)
+        .toInt(),
+    todayShippedRevenue:
+        ((json['today_shipped_revenue'] ?? json['todayShippedRevenue'])
+                    as num? ??
+                0)
+            .toDouble(),
+    shippedCustomers:
+        ((json['shipped_customers'] ?? json['shippedCustomers']) as num? ?? 0)
+            .toInt(),
+  );
+
+  final int totalOrders;
+  final int todayOrders;
+  final double totalRevenue;
+  final double todayRevenue;
+  final int totalCustomers;
+  final int totalProducts;
+  final int pendingOrders;
+  final int lowStockCount;
+  final double cancelledRevenue;
+  final int shippedOrders;
+  final double shippedRevenue;
+  final int todayShipped;
+  final double todayShippedRevenue;
+  final int shippedCustomers;
+}
+
+class DashboardOrderCounts {
+  DashboardOrderCounts({
+    required this.pending,
+    required this.confirmed,
+    required this.processing,
+    required this.shipped,
+    required this.delivered,
+    required this.cancelled,
+  });
+
+  factory DashboardOrderCounts.fromJson(Map<String, dynamic> json) =>
+      DashboardOrderCounts(
+        pending: (json['pending'] as num? ?? 0).toInt(),
+        confirmed: (json['confirmed'] as num? ?? 0).toInt(),
+        processing: (json['processing'] as num? ?? 0).toInt(),
+        shipped: (json['shipped'] as num? ?? 0).toInt(),
+        delivered: (json['delivered'] as num? ?? 0).toInt(),
+        cancelled: (json['cancelled'] as num? ?? 0).toInt(),
+      );
+
+  final int pending;
+  final int confirmed;
+  final int processing;
+  final int shipped;
+  final int delivered;
+  final int cancelled;
+
+  Map<String, int> get asMap => <String, int>{
+    'pending': pending,
+    'confirmed': confirmed,
+    'processing': processing,
+    'shipped': shipped,
+    'delivered': delivered,
+    'cancelled': cancelled,
+  };
+}
+
+class DashboardRevenueByStatus {
+  DashboardRevenueByStatus({
+    required this.pending,
+    required this.confirmed,
+    required this.processing,
+    required this.shipped,
+    required this.delivered,
+    required this.cancelled,
+  });
+
+  factory DashboardRevenueByStatus.fromJson(Map<String, dynamic> json) =>
+      DashboardRevenueByStatus(
+        pending: ((json['pending'] as num?) ?? 0).toDouble(),
+        confirmed: ((json['confirmed'] as num?) ?? 0).toDouble(),
+        processing: ((json['processing'] as num?) ?? 0).toDouble(),
+        shipped: ((json['shipped'] as num?) ?? 0).toDouble(),
+        delivered: ((json['delivered'] as num?) ?? 0).toDouble(),
+        cancelled: ((json['cancelled'] as num?) ?? 0).toDouble(),
+      );
+
+  final double pending;
+  final double confirmed;
+  final double processing;
+  final double shipped;
+  final double delivered;
+  final double cancelled;
+}
+
+class DailyOrderPoint {
+  DailyOrderPoint({required this.date, required this.count});
+
+  factory DailyOrderPoint.fromJson(Map<String, dynamic> json) =>
+      DailyOrderPoint(
+        date: (json['date'] ?? '').toString(),
+        count: (json['count'] as num? ?? 0).toInt(),
+      );
+
+  final String date;
+  final int count;
+}
+
+class DashboardLowStockVariant {
+  DashboardLowStockVariant({required this.label, required this.stock});
+
+  factory DashboardLowStockVariant.fromJson(Map<String, dynamic> json) =>
+      DashboardLowStockVariant(
+        label: (json['label'] ?? '').toString(),
+        stock: (json['stock'] as num? ?? 0).toInt(),
+      );
+
+  final String label;
+  final int stock;
+}
+
+class DashboardLowStockItem {
+  DashboardLowStockItem({
+    required this.id,
+    required this.name,
+    required this.stock,
+    this.image,
+    this.variants = const [],
+  });
+
+  factory DashboardLowStockItem.fromJson(Map<String, dynamic> json) =>
+      DashboardLowStockItem(
+        id: (json['id'] ?? '').toString(),
+        name: (json['name'] ?? '').toString(),
+        stock: (json['stock'] as num? ?? 0).toInt(),
+        image: json['image'] as String?,
+        variants: ((json['variants'] as List?) ?? const <Object?>[])
+            .whereType<Map<Object?, Object?>>()
+            .map(
+              (e) => DashboardLowStockVariant.fromJson(
+                Map<String, dynamic>.from(e),
+              ),
+            )
+            .toList(),
+      );
+
+  final String id;
+  final String name;
+  final int stock;
+  final String? image;
+  final List<DashboardLowStockVariant> variants;
+
+  bool get hasVariants => variants.isNotEmpty;
+}
+
+class TopProductSummary {
   TopProductSummary({
     required this.id,
     required this.name,
@@ -1038,7 +1278,8 @@ class TopProductSummary {
     required this.price,
   });
 
-  factory TopProductSummary.fromJson(Map<String, dynamic> json) => TopProductSummary(
+  factory TopProductSummary.fromJson(Map<String, dynamic> json) =>
+      TopProductSummary(
         id: (json['id'] ?? '').toString(),
         name: (json['name'] as String?) ?? '',
         slug: (json['slug'] as String?) ?? '',
@@ -1052,66 +1293,106 @@ class TopProductSummary {
   final String image;
   final int soldCount;
   final double price;
+
+  double get estimatedRevenue => soldCount * price;
 }
 
 class DashboardData {
-
   DashboardData({
+    required this.stats,
+    required this.orderCounts,
+    required this.revenueByStatus,
+    required this.dailyOrders,
     required this.cards,
     required this.flaggedOrdersCount,
     required this.recentOrders,
     required this.topProducts,
+    required this.lowStock,
   });
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
-    // Backend currently returns snake_case keys (today_orders, recent_orders,
-    // etc.) — accept both shapes until the backend migrates to camelCase.
-    final stats = (json['stats'] as Map<String, dynamic>?) ??
-        (json['cards'] as Map<String, dynamic>?) ??
+    final payload = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
+    // Older mobile payloads nested the lightweight stats under `data.stats`.
+    // Newer ones mirror the richer web-admin dashboard response, which is
+    // flat at the top level. Accept both so the client stays forwards/backwards
+    // compatible during rollout.
+    final statsJson =
+        (payload['stats'] as Map<String, dynamic>?) ??
+        (payload['cards'] as Map<String, dynamic>?) ??
         const <String, dynamic>{};
+
+    final stats = DashboardStatsSnapshot.fromJson(statsJson);
     final cards = DashboardCards(
-      todayOrders: StatCard(
-        value: (stats['todayOrders'] ?? stats['today_orders'] ?? 0) as num,
-      ),
-      todayRevenue: StatCard(
-        value: (stats['todayRevenue'] ?? stats['today_revenue'] ?? 0) as num,
-      ),
-      pendingOrders: StatCard(
-        value: (stats['pendingOrders'] ?? stats['pending_orders'] ?? 0) as num,
-      ),
-      lowStockItems: StatCard(
-        value: (stats['lowStockItems'] ??
-                stats['low_stock_items'] ??
-                stats['low_stock'] ??
-                0) as num,
-      ),
+      todayOrders: StatCard(value: stats.todayOrders),
+      todayRevenue: StatCard(value: stats.todayRevenue),
+      pendingOrders: StatCard(value: stats.pendingOrders),
+      lowStockItems: StatCard(value: stats.lowStockCount),
     );
-    final recent = (json['recentOrders'] ?? json['recent_orders'] ?? const [])
-        as List;
-    final top = (json['topProducts'] ?? json['top_products'] ?? const []) as List;
+    final recent =
+        (payload['recentOrders'] ??
+                payload['recent_orders'] ??
+                const <Object?>[])
+            as List;
+    final top =
+        (payload['topProducts'] ?? payload['top_products'] ?? const <Object?>[])
+            as List;
+    final daily =
+        (payload['daily_orders'] ?? payload['dailyOrders'] ?? const <Object?>[])
+            as List;
+    final lowStock =
+        (payload['low_stock'] ?? payload['lowStock'] ?? const <Object?>[])
+            as List;
+    final orderCounts = DashboardOrderCounts.fromJson(
+      (payload['order_counts'] as Map<String, dynamic>?) ??
+          (payload['orderCounts'] as Map<String, dynamic>?) ??
+          const <String, dynamic>{},
+    );
+    final revenueByStatus = DashboardRevenueByStatus.fromJson(
+      (payload['revenue_by_status'] as Map<String, dynamic>?) ??
+          (payload['revenueByStatus'] as Map<String, dynamic>?) ??
+          const <String, dynamic>{},
+    );
     return DashboardData(
+      stats: stats,
+      orderCounts: orderCounts,
+      revenueByStatus: revenueByStatus,
+      dailyOrders: daily
+          .map((e) => DailyOrderPoint.fromJson(e as Map<String, dynamic>))
+          .toList(),
       cards: cards,
-      flaggedOrdersCount: (json['flaggedOrdersCount'] ??
-          json['flagged_orders_count'] ??
-          0) as int,
+      flaggedOrdersCount:
+          (payload['flaggedOrdersCount'] ??
+                  payload['flagged_orders_count'] ??
+                  0)
+              as int,
       recentOrders: recent
           .map((e) => OrderListItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       topProducts: top
           .map((e) => TopProductSummary.fromJson(e as Map<String, dynamic>))
           .toList(),
+      lowStock: lowStock
+          .map((e) => DashboardLowStockItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
+  final DashboardStatsSnapshot stats;
+  final DashboardOrderCounts orderCounts;
+  final DashboardRevenueByStatus revenueByStatus;
+  final List<DailyOrderPoint> dailyOrders;
   final DashboardCards cards;
   final int flaggedOrdersCount;
   final List<OrderListItem> recentOrders;
   final List<TopProductSummary> topProducts;
+  final List<DashboardLowStockItem> lowStock;
 }
 
 // --- Analytics ---
 
 class AnalyticsStats {
-
   AnalyticsStats({
     required this.orders,
     required this.revenue,
@@ -1120,11 +1401,11 @@ class AnalyticsStats {
   });
 
   factory AnalyticsStats.fromJson(Map<String, dynamic> json) => AnalyticsStats(
-        orders: json['orders'] as int,
-        revenue: (json['revenue'] as num).toDouble(),
-        avgOrderValue: (json['avgOrderValue'] as num).toDouble(),
-        returnRate: (json['returnRate'] as num).toDouble(),
-      );
+    orders: json['orders'] as int,
+    revenue: (json['revenue'] as num).toDouble(),
+    avgOrderValue: (json['avgOrderValue'] as num).toDouble(),
+    returnRate: (json['returnRate'] as num).toDouble(),
+  );
   final int orders;
   final double revenue;
   final double avgOrderValue;
@@ -1132,26 +1413,33 @@ class AnalyticsStats {
 }
 
 class RevenuePoint {
-  RevenuePoint({required this.date, required this.revenue, required this.orders});
+  RevenuePoint({
+    required this.date,
+    required this.revenue,
+    required this.orders,
+  });
   factory RevenuePoint.fromJson(Map<String, dynamic> json) => RevenuePoint(
-        date: json['date'] as String,
-        revenue: (json['revenue'] as num).toDouble(),
-        orders: json['orders'] as int,
-      );
+    date: json['date'] as String,
+    revenue: (json['revenue'] as num).toDouble(),
+    orders: json['orders'] as int,
+  );
   final String date;
   final double revenue;
   final int orders;
 }
 
 class TopProductAnalytics {
-
   TopProductAnalytics({
-    required this.name, required this.unitsSold, required this.revenue, this.productId,
+    required this.name,
+    required this.unitsSold,
+    required this.revenue,
+    this.productId,
     this.image,
     this.slug,
   });
 
-  factory TopProductAnalytics.fromJson(Map<String, dynamic> json) => TopProductAnalytics(
+  factory TopProductAnalytics.fromJson(Map<String, dynamic> json) =>
+      TopProductAnalytics(
         productId: json['productId']?.toString(),
         name: json['name'] as String,
         image: json['image'] as String?,
@@ -1169,14 +1457,15 @@ class TopProductAnalytics {
 
 class TrafficSource {
   TrafficSource({required this.source, required this.clicks});
-  factory TrafficSource.fromJson(Map<String, dynamic> json) =>
-      TrafficSource(source: json['source'] as String, clicks: json['clicks'] as int);
+  factory TrafficSource.fromJson(Map<String, dynamic> json) => TrafficSource(
+    source: json['source'] as String,
+    clicks: json['clicks'] as int,
+  );
   final String source;
   final int clicks;
 }
 
 class AnalyticsData {
-
   AnalyticsData({
     required this.period,
     required this.from,
@@ -1222,14 +1511,13 @@ class AnalyticsData {
 // =============================================================================
 
 class AkhiyanApi {
-
   AkhiyanApi({
     required this.baseUrl,
     TokenStorage? storage,
     http.Client? httpClient,
     this.onAuthExpired,
-  })  : _storage = storage ?? InMemoryTokenStorage(),
-        _http = httpClient ?? http.Client() {
+  }) : _storage = storage ?? InMemoryTokenStorage(),
+       _http = httpClient ?? http.Client() {
     auth = AuthApi(this);
     dashboard = DashboardApi(this);
     orders = OrdersApi(this);
@@ -1286,7 +1574,8 @@ class AkhiyanApi {
 
   TokenStorage get storage => _storage;
 
-  Future<bool> get isLoggedIn async => (await _storage.getAccessToken()) != null;
+  Future<bool> get isLoggedIn async =>
+      (await _storage.getAccessToken()) != null;
 
   void close() => _http.close();
 
@@ -1311,9 +1600,9 @@ class AkhiyanApi {
     bool rootBase = false,
   }) async {
     final base = rootBase ? _rootBaseUrl : baseUrl;
-    final uri = Uri.parse('$base$path').replace(
-      queryParameters: query == null || query.isEmpty ? null : query,
-    );
+    final uri = Uri.parse(
+      '$base$path',
+    ).replace(queryParameters: query == null || query.isEmpty ? null : query);
 
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -1350,15 +1639,27 @@ class AkhiyanApi {
           res = await _http.get(uri, headers: headers).timeout(httpTimeout);
         case 'POST':
           res = await _http
-              .post(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .post(
+                uri,
+                headers: headers,
+                body: body == null ? null : jsonEncode(body),
+              )
               .timeout(httpTimeout);
         case 'PATCH':
           res = await _http
-              .patch(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .patch(
+                uri,
+                headers: headers,
+                body: body == null ? null : jsonEncode(body),
+              )
               .timeout(httpTimeout);
         case 'PUT':
           res = await _http
-              .put(uri, headers: headers, body: body == null ? null : jsonEncode(body))
+              .put(
+                uri,
+                headers: headers,
+                body: body == null ? null : jsonEncode(body),
+              )
               .timeout(httpTimeout);
         case 'DELETE':
           res = await _http.delete(uri, headers: headers).timeout(httpTimeout);
@@ -1369,7 +1670,9 @@ class AkhiyanApi {
       stopwatch.stop();
       if (kDebugMode) {
         // ignore: avoid_print
-        print('[api] $method $path TIMEOUT after ${stopwatch.elapsedMilliseconds}ms');
+        print(
+          '[api] $method $path TIMEOUT after ${stopwatch.elapsedMilliseconds}ms',
+        );
       }
       throw NetworkException('Request timed out');
     } on http.ClientException catch (e) {
@@ -1380,7 +1683,9 @@ class AkhiyanApi {
     stopwatch.stop();
     if (kDebugMode) {
       // ignore: avoid_print
-      print('[api] $method $path ${res.statusCode} ${stopwatch.elapsedMilliseconds}ms');
+      print(
+        '[api] $method $path ${res.statusCode} ${stopwatch.elapsedMilliseconds}ms',
+      );
     }
 
     // No refresh token in this backend — on 401, clear tokens and notify.
@@ -1402,11 +1707,15 @@ class AkhiyanApi {
     }
 
     if (res.statusCode >= 400) {
-      final message = (json['message'] as String?) ?? (json['error'] as String?) ?? 'Request failed';
+      final message =
+          (json['message'] as String?) ??
+          (json['error'] as String?) ??
+          'Request failed';
       throw ApiException(
         res.statusCode,
         message,
-        json['errors'] as Map<String, dynamic>? ?? json['details'] as Map<String, dynamic>?,
+        json['errors'] as Map<String, dynamic>? ??
+            json['details'] as Map<String, dynamic>?,
         // Pass the whole decoded body so callers can render Zod-style
         // nested errors verbatim when the flattened `details` doesn't
         // capture nested array indices like `items.0.productId`.
@@ -1416,7 +1725,6 @@ class AkhiyanApi {
 
     return json;
   }
-
 }
 
 // =============================================================================
@@ -1428,10 +1736,11 @@ class AuthApi {
   final AkhiyanApi _api;
 
   Future<AdminUser> login(String email, String password) async {
-    final res = await _api.request('POST', '/auth/login', body: {
-      'email': email,
-      'password': password,
-    });
+    final res = await _api.request(
+      'POST',
+      '/auth/login',
+      body: {'email': email, 'password': password},
+    );
     final result = LoginResult.fromJson(res as Map<String, dynamic>);
     await _api._storage.save(accessToken: result.accessToken);
     return result.user;
@@ -1460,18 +1769,20 @@ class DashboardApi {
   DashboardApi(this._api);
   final AkhiyanApi _api;
 
-  /// Fetches dashboard data, optionally scoped to a date range.
-  ///
-  /// [from] / [to] are sent as ISO 8601 query params in anticipation of
-  /// backend support — the current backend may ignore them, which is fine.
-  /// Once the backend honors the filter, the dashboard date-range pill will
-  /// drive these values without further client changes.
+  /// Fetches the richer admin-dashboard payload that powers the mobile home
+  /// screen. The backend expects date-only `YYYY-MM-DD` params rather than
+  /// ISO timestamps, so single-day presets like "Yesterday" and "Today" map
+  /// cleanly to the same semantics as the web dashboard.
   Future<DashboardData> fetch({DateTime? from, DateTime? to}) async {
-    final res = await _api.request('GET', '/dashboard', query: {
-      if (from != null) 'from': from.toUtc().toIso8601String(),
-      if (to != null) 'to': to.toUtc().toIso8601String(),
-    });
-    return DashboardData.fromJson(res['data'] as Map<String, dynamic>);
+    final res = await _api.request(
+      'GET',
+      '/dashboard',
+      query: {
+        if (from != null) 'from': _formatDateOnly(from),
+        if (to != null) 'to': _formatDateOnly(to),
+      },
+    );
+    return DashboardData.fromJson(res as Map<String, dynamic>);
   }
 }
 
@@ -1490,15 +1801,21 @@ class OrdersApi {
     int page = 1,
     int pageSize = 20,
   }) async {
-    final res = await _api.request('GET', '/orders', query: {
-      if (q != null && q.isNotEmpty) 'q': q,
-      if (status != null && status.isNotEmpty) 'status': status,
-      if (flagged ?? false) 'flagged': 'true',
-      'page': '$page',
-      'pageSize': '$pageSize',
-    });
+    final res = await _api.request(
+      'GET',
+      '/orders',
+      query: {
+        if (q != null && q.isNotEmpty) 'q': q,
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (flagged ?? false) 'flagged': 'true',
+        'page': '$page',
+        'pageSize': '$pageSize',
+      },
+    );
     return PaginatedResponse<OrderListItem>(
-      data: (res['data'] as List).map((e) => OrderListItem.fromJson(e as Map<String, dynamic>)).toList(),
+      data: (res['data'] as List)
+          .map((e) => OrderListItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
       pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
@@ -1559,7 +1876,9 @@ class OrdersApi {
   Future<Order> create({
     required String customerName,
     required String customerPhone,
-    required String customerAddress, required List<Map<String, dynamic>> items, String? customerEmail,
+    required String customerAddress,
+    required List<Map<String, dynamic>> items,
+    String? customerEmail,
     String? city,
     String? zipCode,
     double shippingCost = 0,
@@ -1567,51 +1886,77 @@ class OrdersApi {
     String paymentMethod = 'cod',
     String? notes,
   }) async {
-    final res = await _api.request('POST', '/orders', body: {
-      'customerName': customerName,
-      'customerPhone': customerPhone,
-      'customerEmail': ?customerEmail,
-      'customerAddress': customerAddress,
-      'city': ?city,
-      'zipCode': ?zipCode,
-      'items': items,
-      'shippingCost': shippingCost,
-      'discount': discount,
-      'paymentMethod': paymentMethod,
-      'notes': ?notes,
-    });
+    final res = await _api.request(
+      'POST',
+      '/orders',
+      body: {
+        'customerName': customerName,
+        'customerPhone': customerPhone,
+        'customerEmail': ?customerEmail,
+        'customerAddress': customerAddress,
+        'city': ?city,
+        'zipCode': ?zipCode,
+        'items': items,
+        'shippingCost': shippingCost,
+        'discount': discount,
+        'paymentMethod': paymentMethod,
+        'notes': ?notes,
+      },
+    );
     return Order.fromJson(res['data'] as Map<String, dynamic>);
   }
 
-  Future<Order> updateStatus(String id, {String? status, String? paymentStatus, String? notes}) async {
-    final res = await _api.request('PATCH', '/orders/$id', body: {
-      'status': ?status,
-      'paymentStatus': ?paymentStatus,
-      'notes': ?notes,
-    });
+  Future<Order> updateStatus(
+    String id, {
+    String? status,
+    String? paymentStatus,
+    String? notes,
+  }) async {
+    final res = await _api.request(
+      'PATCH',
+      '/orders/$id',
+      body: {
+        'status': ?status,
+        'paymentStatus': ?paymentStatus,
+        'notes': ?notes,
+      },
+    );
     return Order.fromJson(res['data'] as Map<String, dynamic>);
   }
 
-  Future<Order> dispatchToCourier(String id, {required String courier, double? weight, String? instructions}) async {
-    final res = await _api.request('POST', '/orders/$id/courier', body: {
-      'courier': courier,
-      'weight': ?weight,
-      'instructions': ?instructions,
-    });
+  Future<Order> dispatchToCourier(
+    String id, {
+    required String courier,
+    double? weight,
+    String? instructions,
+  }) async {
+    final res = await _api.request(
+      'POST',
+      '/orders/$id/courier',
+      body: {
+        'courier': courier,
+        'weight': ?weight,
+        'instructions': ?instructions,
+      },
+    );
     return Order.fromJson(res['data'] as Map<String, dynamic>);
   }
 
   Future<Order> cancel(String id, {String? reason}) async {
-    final res = await _api.request('POST', '/orders/$id/cancel', body: {
-      'reason': ?reason,
-    });
+    final res = await _api.request(
+      'POST',
+      '/orders/$id/cancel',
+      body: {'reason': ?reason},
+    );
     return Order.fromJson(res['data'] as Map<String, dynamic>);
   }
 
   Future<Order> flag(String id, {String? reason}) async {
-    final res = await _api.request('POST', '/orders/$id/flag', body: {
-      'reason': ?reason,
-    });
+    final res = await _api.request(
+      'POST',
+      '/orders/$id/flag',
+      body: {'reason': ?reason},
+    );
     return Order.fromJson(res['data'] as Map<String, dynamic>);
   }
 
@@ -1636,15 +1981,22 @@ class ProductsApi {
     int page = 1,
     int pageSize = 20,
   }) async {
-    final res = await _api.request('GET', '/products', query: {
-      if (q != null && q.isNotEmpty) 'q': q,
-      if (status != null && status.isNotEmpty) 'status': status,
-      if (stockFilter != null && stockFilter.isNotEmpty) 'stockFilter': stockFilter,
-      'page': '$page',
-      'pageSize': '$pageSize',
-    });
+    final res = await _api.request(
+      'GET',
+      '/products',
+      query: {
+        if (q != null && q.isNotEmpty) 'q': q,
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (stockFilter != null && stockFilter.isNotEmpty)
+          'stockFilter': stockFilter,
+        'page': '$page',
+        'pageSize': '$pageSize',
+      },
+    );
     return PaginatedResponse<Product>(
-      data: (res['data'] as List).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList(),
+      data: (res['data'] as List)
+          .map((e) => Product.fromJson(e as Map<String, dynamic>))
+          .toList(),
       pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
@@ -1668,15 +2020,22 @@ class ProductsApi {
     await _api.request('DELETE', '/products/$id');
   }
 
-  Future<Map<String, dynamic>> setStock(String id, {int? stock, int? delta}) async {
-    assert(stock != null || delta != null, 'Provide stock (absolute) or delta (relative)');
-    final res = await _api.request('PATCH', '/products/$id/stock', body: {
-      'stock': ?stock,
-      'delta': ?delta,
-    });
+  Future<Map<String, dynamic>> setStock(
+    String id, {
+    int? stock,
+    int? delta,
+  }) async {
+    assert(
+      stock != null || delta != null,
+      'Provide stock (absolute) or delta (relative)',
+    );
+    final res = await _api.request(
+      'PATCH',
+      '/products/$id/stock',
+      body: {'stock': ?stock, 'delta': ?delta},
+    );
     return res['data'] as Map<String, dynamic>;
   }
-
 }
 
 // =============================================================================
@@ -1720,14 +2079,24 @@ class CustomersApi {
   CustomersApi(this._api);
   final AkhiyanApi _api;
 
-  Future<PaginatedResponse<CustomerListItem>> list({String? q, int page = 1, int pageSize = 20}) async {
-    final res = await _api.request('GET', '/customers', query: {
-      if (q != null && q.isNotEmpty) 'q': q,
-      'page': '$page',
-      'pageSize': '$pageSize',
-    });
+  Future<PaginatedResponse<CustomerListItem>> list({
+    String? q,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final res = await _api.request(
+      'GET',
+      '/customers',
+      query: {
+        if (q != null && q.isNotEmpty) 'q': q,
+        'page': '$page',
+        'pageSize': '$pageSize',
+      },
+    );
     return PaginatedResponse<CustomerListItem>(
-      data: (res['data'] as List).map((e) => CustomerListItem.fromJson(e as Map<String, dynamic>)).toList(),
+      data: (res['data'] as List)
+          .map((e) => CustomerListItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
       pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
@@ -1746,20 +2115,33 @@ class InventoryApi {
   InventoryApi(this._api);
   final AkhiyanApi _api;
 
-  Future<InventoryResult> list({String? stockFilter, String? q, int page = 1, int pageSize = 50}) async {
-    final res = await _api.request('GET', '/inventory', query: {
-      if (stockFilter != null && stockFilter.isNotEmpty) 'stockFilter': stockFilter,
-      if (q != null && q.isNotEmpty) 'q': q,
-      'page': '$page',
-      'pageSize': '$pageSize',
-    });
+  Future<InventoryResult> list({
+    String? stockFilter,
+    String? q,
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final res = await _api.request(
+      'GET',
+      '/inventory',
+      query: {
+        if (stockFilter != null && stockFilter.isNotEmpty)
+          'stockFilter': stockFilter,
+        if (q != null && q.isNotEmpty) 'q': q,
+        'page': '$page',
+        'pageSize': '$pageSize',
+      },
+    );
     return InventoryResult(
-      data: (res['data'] as List).map((e) => InventoryItem.fromJson(e as Map<String, dynamic>)).toList(),
+      data: (res['data'] as List)
+          .map((e) => InventoryItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
       pagination: _paginationFrom(res as Map<String, dynamic>),
-      summary: InventorySummary.fromJson(res['summary'] as Map<String, dynamic>),
+      summary: InventorySummary.fromJson(
+        res['summary'] as Map<String, dynamic>,
+      ),
     );
   }
-
 }
 
 // =============================================================================
@@ -1771,10 +2153,14 @@ class CouponsApi {
   final AkhiyanApi _api;
 
   Future<List<Coupon>> list({bool? active}) async {
-    final res = await _api.request('GET', '/coupons', query: {
-      if (active != null) 'active': active.toString(),
-    });
-    return (res['data'] as List).map((e) => Coupon.fromJson(e as Map<String, dynamic>)).toList();
+    final res = await _api.request(
+      'GET',
+      '/coupons',
+      query: {if (active != null) 'active': active.toString()},
+    );
+    return (res['data'] as List)
+        .map((e) => Coupon.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<Coupon> detail(String id) async {
@@ -1792,16 +2178,20 @@ class CouponsApi {
     DateTime? expiresAt,
     bool isActive = true,
   }) async {
-    final res = await _api.request('POST', '/coupons', body: {
-      'code': code,
-      'type': type,
-      'value': value,
-      'minOrderAmount': minOrderAmount,
-      'maxUses': ?maxUses,
-      if (startsAt != null) 'startsAt': startsAt.toUtc().toIso8601String(),
-      if (expiresAt != null) 'expiresAt': expiresAt.toUtc().toIso8601String(),
-      'isActive': isActive,
-    });
+    final res = await _api.request(
+      'POST',
+      '/coupons',
+      body: {
+        'code': code,
+        'type': type,
+        'value': value,
+        'minOrderAmount': minOrderAmount,
+        'maxUses': ?maxUses,
+        if (startsAt != null) 'startsAt': startsAt.toUtc().toIso8601String(),
+        if (expiresAt != null) 'expiresAt': expiresAt.toUtc().toIso8601String(),
+        'isActive': isActive,
+      },
+    );
     return Coupon.fromJson(res['data'] as Map<String, dynamic>);
   }
 
@@ -1825,7 +2215,9 @@ class FlashSalesApi {
 
   Future<List<FlashSale>> list() async {
     final res = await _api.request('GET', '/flash-sales');
-    return (res['data'] as List).map((e) => FlashSale.fromJson(e as Map<String, dynamic>)).toList();
+    return (res['data'] as List)
+        .map((e) => FlashSale.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<Map<String, dynamic>> detail(String id) async {
@@ -1840,17 +2232,24 @@ class FlashSalesApi {
     bool isActive = true,
     List<String>? productIds,
   }) async {
-    final res = await _api.request('POST', '/flash-sales', body: {
-      'title': title,
-      'startsAt': startsAt.toUtc().toIso8601String(),
-      'endsAt': endsAt.toUtc().toIso8601String(),
-      'isActive': isActive,
-      'productIds': ?productIds,
-    });
+    final res = await _api.request(
+      'POST',
+      '/flash-sales',
+      body: {
+        'title': title,
+        'startsAt': startsAt.toUtc().toIso8601String(),
+        'endsAt': endsAt.toUtc().toIso8601String(),
+        'isActive': isActive,
+        'productIds': ?productIds,
+      },
+    );
     return res['data'] as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> update(String id, Map<String, dynamic> patch) async {
+  Future<Map<String, dynamic>> update(
+    String id,
+    Map<String, dynamic> patch,
+  ) async {
     final res = await _api.request('PATCH', '/flash-sales/$id', body: patch);
     return res['data'] as Map<String, dynamic>;
   }
@@ -1870,7 +2269,9 @@ class ShortlinksApi {
 
   Future<List<Shortlink>> list() async {
     final res = await _api.request('GET', '/shortlinks');
-    return (res['data'] as List).map((e) => Shortlink.fromJson(e as Map<String, dynamic>)).toList();
+    return (res['data'] as List)
+        .map((e) => Shortlink.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<Map<String, dynamic>> detail(String id) async {
@@ -1878,20 +2279,29 @@ class ShortlinksApi {
     return res['data'] as Map<String, dynamic>;
   }
 
-  Future<Shortlink> create({required String slug, required String targetUrl, bool isActive = true}) async {
-    final res = await _api.request('POST', '/shortlinks', body: {
-      'slug': slug,
-      'targetUrl': targetUrl,
-      'isActive': isActive,
-    });
+  Future<Shortlink> create({
+    required String slug,
+    required String targetUrl,
+    bool isActive = true,
+  }) async {
+    final res = await _api.request(
+      'POST',
+      '/shortlinks',
+      body: {'slug': slug, 'targetUrl': targetUrl, 'isActive': isActive},
+    );
     return Shortlink.fromJson(res['data'] as Map<String, dynamic>);
   }
 
-  Future<Shortlink> update(String id, {String? targetUrl, bool? isActive}) async {
-    final res = await _api.request('PATCH', '/shortlinks/$id', body: {
-      'targetUrl': ?targetUrl,
-      'isActive': ?isActive,
-    });
+  Future<Shortlink> update(
+    String id, {
+    String? targetUrl,
+    bool? isActive,
+  }) async {
+    final res = await _api.request(
+      'PATCH',
+      '/shortlinks/$id',
+      body: {'targetUrl': ?targetUrl, 'isActive': ?isActive},
+    );
     return Shortlink.fromJson(res['data'] as Map<String, dynamic>);
   }
 
@@ -1909,12 +2319,20 @@ class AnalyticsApi {
   final AkhiyanApi _api;
 
   /// `period` is one of: today | 7d | 30d | custom. For `custom`, pass [from] and [to].
-  Future<AnalyticsData> fetch({String period = '7d', DateTime? from, DateTime? to}) async {
-    final res = await _api.request('GET', '/analytics', query: {
-      'period': period,
-      if (from != null) 'from': from.toUtc().toIso8601String(),
-      if (to != null) 'to': to.toUtc().toIso8601String(),
-    });
+  Future<AnalyticsData> fetch({
+    String period = '7d',
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    final res = await _api.request(
+      'GET',
+      '/analytics',
+      query: {
+        'period': period,
+        if (from != null) 'from': from.toUtc().toIso8601String(),
+        if (to != null) 'to': to.toUtc().toIso8601String(),
+      },
+    );
     return AnalyticsData.fromJson(res['data'] as Map<String, dynamic>);
   }
 }
@@ -1928,10 +2346,14 @@ class BannersApi {
   final AkhiyanApi _api;
 
   Future<List<AdminBanner>> list({String? position}) async {
-    final res = await _api.request('GET', '/marketing/banners', query: {
-      'position': ?position,
-    });
-    return (res['data'] as List).map((e) => AdminBanner.fromJson(e as Map<String, dynamic>)).toList();
+    final res = await _api.request(
+      'GET',
+      '/marketing/banners',
+      query: {'position': ?position},
+    );
+    return (res['data'] as List)
+        .map((e) => AdminBanner.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<AdminBanner> create(Map<String, dynamic> input) async {
@@ -1940,7 +2362,11 @@ class BannersApi {
   }
 
   Future<AdminBanner> update(String id, Map<String, dynamic> patch) async {
-    final res = await _api.request('PATCH', '/marketing/banners/$id', body: patch);
+    final res = await _api.request(
+      'PATCH',
+      '/marketing/banners/$id',
+      body: patch,
+    );
     return AdminBanner.fromJson(res['data'] as Map<String, dynamic>);
   }
 
@@ -1957,49 +2383,69 @@ class FraudApi {
   FraudApi(this._api);
   final AkhiyanApi _api;
 
-  Future<PaginatedResponse<FlaggedOrder>> flaggedOrders({int page = 1, int pageSize = 20}) async {
-    final res = await _api.request('GET', '/fraud/orders', query: {
-      'page': '$page',
-      'pageSize': '$pageSize',
-    });
+  Future<PaginatedResponse<FlaggedOrder>> flaggedOrders({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final res = await _api.request(
+      'GET',
+      '/fraud/orders',
+      query: {'page': '$page', 'pageSize': '$pageSize'},
+    );
     return PaginatedResponse<FlaggedOrder>(
-      data: (res['data'] as List).map((e) => FlaggedOrder.fromJson(e as Map<String, dynamic>)).toList(),
+      data: (res['data'] as List)
+          .map((e) => FlaggedOrder.fromJson(e as Map<String, dynamic>))
+          .toList(),
       pagination: _paginationFrom(res as Map<String, dynamic>),
     );
   }
 
   Future<List<BlockedIp>> blockedIps() async {
     final res = await _api.request('GET', '/fraud/blocked-ips');
-    return (res['data'] as List).map((e) => BlockedIp.fromJson(e as Map<String, dynamic>)).toList();
+    return (res['data'] as List)
+        .map((e) => BlockedIp.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<BlockedIp> blockIp(String ipAddress, {String? reason}) async {
-    final res = await _api.request('POST', '/fraud/blocked-ips', body: {
-      'ipAddress': ipAddress,
-      'reason': ?reason,
-    });
+    final res = await _api.request(
+      'POST',
+      '/fraud/blocked-ips',
+      body: {'ipAddress': ipAddress, 'reason': ?reason},
+    );
     return BlockedIp.fromJson(res['data'] as Map<String, dynamic>);
   }
 
   Future<void> unblockIp(String ipAddress) async {
-    await _api.request('DELETE', '/fraud/blocked-ips', query: {'ip': ipAddress});
+    await _api.request(
+      'DELETE',
+      '/fraud/blocked-ips',
+      query: {'ip': ipAddress},
+    );
   }
 
   Future<List<BlockedDevice>> blockedDevices() async {
     final res = await _api.request('GET', '/fraud/blocked-devices');
-    return (res['data'] as List).map((e) => BlockedDevice.fromJson(e as Map<String, dynamic>)).toList();
+    return (res['data'] as List)
+        .map((e) => BlockedDevice.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<BlockedDevice> blockDevice(String fpHash, {String? reason}) async {
-    final res = await _api.request('POST', '/fraud/blocked-devices', body: {
-      'fpHash': fpHash,
-      'reason': ?reason,
-    });
+    final res = await _api.request(
+      'POST',
+      '/fraud/blocked-devices',
+      body: {'fpHash': fpHash, 'reason': ?reason},
+    );
     return BlockedDevice.fromJson(res['data'] as Map<String, dynamic>);
   }
 
   Future<void> unblockDevice(String fpHash) async {
-    await _api.request('DELETE', '/fraud/blocked-devices', query: {'fpHash': fpHash});
+    await _api.request(
+      'DELETE',
+      '/fraud/blocked-devices',
+      query: {'fpHash': fpHash},
+    );
   }
 }
 
@@ -2013,7 +2459,9 @@ class StaffApi {
 
   Future<List<StaffMember>> list() async {
     final res = await _api.request('GET', '/staff');
-    return (res['data'] as List).map((e) => StaffMember.fromJson(e as Map<String, dynamic>)).toList();
+    return (res['data'] as List)
+        .map((e) => StaffMember.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<StaffMember> create({
@@ -2023,22 +2471,31 @@ class StaffApi {
     String? phone,
     String role = 'staff',
   }) async {
-    final res = await _api.request('POST', '/staff', body: {
-      'name': name,
-      'email': email,
-      'password': password,
-      'phone': ?phone,
-      'role': role,
-    });
+    final res = await _api.request(
+      'POST',
+      '/staff',
+      body: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'phone': ?phone,
+        'role': role,
+      },
+    );
     return StaffMember.fromJson(res['data'] as Map<String, dynamic>);
   }
 
-  Future<StaffMember> update(String id, {String? name, String? phone, String? role}) async {
-    final res = await _api.request('PATCH', '/staff/$id', body: {
-      'name': ?name,
-      'phone': ?phone,
-      'role': ?role,
-    });
+  Future<StaffMember> update(
+    String id, {
+    String? name,
+    String? phone,
+    String? role,
+  }) async {
+    final res = await _api.request(
+      'PATCH',
+      '/staff/$id',
+      body: {'name': ?name, 'phone': ?phone, 'role': ?role},
+    );
     return StaffMember.fromJson(res['data'] as Map<String, dynamic>);
   }
 
@@ -2091,11 +2548,7 @@ class MediaApi {
     req.headers['Accept'] = 'application/json';
 
     req.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: filename,
-      ),
+      http.MultipartFile.fromBytes('file', bytes, filename: filename),
     );
 
     final streamed = await req.send();
@@ -2117,7 +2570,8 @@ class MediaApi {
     }
 
     if (streamed.statusCode >= 400) {
-      final message = (json['message'] as String?) ??
+      final message =
+          (json['message'] as String?) ??
           (json['error'] as String?) ??
           'Upload failed';
       throw ApiException(streamed.statusCode, message);
@@ -2161,27 +2615,25 @@ class LandingPage {
   });
 
   factory LandingPage.fromJson(Map<String, dynamic> json) => LandingPage(
-        id: (json['id'] ?? '').toString(),
-        slug: (json['slug'] as String?) ?? '',
-        title: (json['title'] as String?) ?? '',
-        isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
-        heroHeadline:
-            (json['heroHeadline'] ?? json['hero_headline']) as String?,
-        heroSubheadline:
-            (json['heroSubheadline'] ?? json['hero_subheadline']) as String?,
-        heroImage: (json['heroImage'] ?? json['hero_image']) as String?,
-        heroCta: (json['heroCta'] ?? json['hero_cta']) as String?,
-        heroBadge: (json['heroBadge'] ?? json['hero_badge']) as String?,
-        heroTrustText:
-            (json['heroTrustText'] ?? json['hero_trust_text']) as String?,
-        primaryColor:
-            (json['primaryColor'] ?? json['primary_color']) as String?,
-        metaTitle: (json['metaTitle'] ?? json['meta_title']) as String?,
-        metaDescription:
-            (json['metaDescription'] ?? json['meta_description']) as String?,
-        createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
-        raw: json,
-      );
+    id: (json['id'] ?? '').toString(),
+    slug: (json['slug'] as String?) ?? '',
+    title: (json['title'] as String?) ?? '',
+    isActive: (json['isActive'] ?? json['is_active'] ?? true) as bool,
+    heroHeadline: (json['heroHeadline'] ?? json['hero_headline']) as String?,
+    heroSubheadline:
+        (json['heroSubheadline'] ?? json['hero_subheadline']) as String?,
+    heroImage: (json['heroImage'] ?? json['hero_image']) as String?,
+    heroCta: (json['heroCta'] ?? json['hero_cta']) as String?,
+    heroBadge: (json['heroBadge'] ?? json['hero_badge']) as String?,
+    heroTrustText:
+        (json['heroTrustText'] ?? json['hero_trust_text']) as String?,
+    primaryColor: (json['primaryColor'] ?? json['primary_color']) as String?,
+    metaTitle: (json['metaTitle'] ?? json['meta_title']) as String?,
+    metaDescription:
+        (json['metaDescription'] ?? json['meta_description']) as String?,
+    createdAt: _parseDate(json['createdAt'] ?? json['created_at']),
+    raw: json,
+  );
 
   final String id;
   final String slug;
@@ -2277,16 +2729,20 @@ class LandingPagesApi {
     String? heroCta,
     String? primaryColor,
   }) async {
-    final res = await _api.request('POST', '/landing-pages', body: {
-      'title': title,
-      if (slug != null && slug.isNotEmpty) 'slug': slug,
-      'is_active': isActive,
-      if (heroHeadline != null) 'hero_headline': heroHeadline,
-      if (heroSubheadline != null) 'hero_subheadline': heroSubheadline,
-      if (heroImage != null) 'hero_image': heroImage,
-      if (heroCta != null) 'hero_cta': heroCta,
-      if (primaryColor != null) 'primary_color': primaryColor,
-    });
+    final res = await _api.request(
+      'POST',
+      '/landing-pages',
+      body: {
+        'title': title,
+        if (slug != null && slug.isNotEmpty) 'slug': slug,
+        'is_active': isActive,
+        if (heroHeadline != null) 'hero_headline': heroHeadline,
+        if (heroSubheadline != null) 'hero_subheadline': heroSubheadline,
+        if (heroImage != null) 'hero_image': heroImage,
+        if (heroCta != null) 'hero_cta': heroCta,
+        if (primaryColor != null) 'primary_color': primaryColor,
+      },
+    );
     final data = res is Map<String, dynamic>
         ? (res['data'] is Map ? res['data'] as Map<String, dynamic> : res)
         : <String, dynamic>{};
@@ -2394,13 +2850,13 @@ class FeedDefaults {
   });
 
   factory FeedDefaults.fromJson(Map<String, dynamic> json) => FeedDefaults(
-        brand: json['brand'] as String?,
-        condition: json['condition'] as String?,
-        googleProductCategory:
-            (json['google_product_category'] ?? json['googleProductCategory'])
-                as String?,
-        siteUrl: (json['site_url'] ?? json['siteUrl']) as String?,
-      );
+    brand: json['brand'] as String?,
+    condition: json['condition'] as String?,
+    googleProductCategory:
+        (json['google_product_category'] ?? json['googleProductCategory'])
+            as String?,
+    siteUrl: (json['site_url'] ?? json['siteUrl']) as String?,
+  );
 
   final String? brand;
   final String? condition;
@@ -2420,14 +2876,14 @@ class FeedStats {
   });
 
   factory FeedStats.fromJson(Map<String, dynamic> json) => FeedStats(
-        rowsInFeed: (json['rowsInFeed'] ?? 0) as int,
-        activeProducts: (json['activeProducts'] ?? 0) as int,
-        totalProducts: (json['totalProducts'] ?? 0) as int,
-        activeFlashSales: (json['activeFlashSales'] ?? 0) as int,
-        inStock: (json['inStock'] ?? 0) as int,
-        outOfStock: (json['outOfStock'] ?? 0) as int,
-        onSale: (json['onSale'] ?? 0) as int,
-      );
+    rowsInFeed: (json['rowsInFeed'] ?? 0) as int,
+    activeProducts: (json['activeProducts'] ?? 0) as int,
+    totalProducts: (json['totalProducts'] ?? 0) as int,
+    activeFlashSales: (json['activeFlashSales'] ?? 0) as int,
+    inStock: (json['inStock'] ?? 0) as int,
+    outOfStock: (json['outOfStock'] ?? 0) as int,
+    onSale: (json['onSale'] ?? 0) as int,
+  );
 
   final int rowsInFeed;
   final int activeProducts;
@@ -2442,10 +2898,11 @@ class FeedConfig {
   const FeedConfig({required this.defaults, required this.stats});
 
   factory FeedConfig.fromJson(Map<String, dynamic> json) => FeedConfig(
-        defaults:
-            FeedDefaults.fromJson((json['defaults'] as Map<String, dynamic>?) ?? {}),
-        stats: FeedStats.fromJson((json['stats'] as Map<String, dynamic>?) ?? {}),
-      );
+    defaults: FeedDefaults.fromJson(
+      (json['defaults'] as Map<String, dynamic>?) ?? {},
+    ),
+    stats: FeedStats.fromJson((json['stats'] as Map<String, dynamic>?) ?? {}),
+  );
 
   final FeedDefaults defaults;
   final FeedStats stats;
@@ -2472,13 +2929,17 @@ class FeedsApi {
     String? googleProductCategory,
     String? siteUrl,
   }) async {
-    await _api.request('PUT', '/feeds', body: {
-      if (brand != null) 'brand': brand,
-      if (condition != null) 'condition': condition,
-      if (googleProductCategory != null)
-        'google_product_category': googleProductCategory,
-      if (siteUrl != null) 'site_url': siteUrl,
-    });
+    await _api.request(
+      'PUT',
+      '/feeds',
+      body: {
+        if (brand != null) 'brand': brand,
+        if (condition != null) 'condition': condition,
+        if (googleProductCategory != null)
+          'google_product_category': googleProductCategory,
+        if (siteUrl != null) 'site_url': siteUrl,
+      },
+    );
     return fetch();
   }
 }
@@ -2523,6 +2984,13 @@ class AdminSettingsApi {
 // =============================================================================
 // Helpers
 // =============================================================================
+
+String _formatDateOnly(DateTime d) {
+  final y = d.year.toString().padLeft(4, '0');
+  final m = d.month.toString().padLeft(2, '0');
+  final day = d.day.toString().padLeft(2, '0');
+  return '$y-$m-$day';
+}
 
 DateTime? _parseDate(dynamic v) {
   if (v == null) return null;

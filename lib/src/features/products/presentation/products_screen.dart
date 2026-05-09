@@ -134,7 +134,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                     ),
-                    textStyle: AppTypography.bodySm.copyWith(
+                    textStyle: context.bodySm.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -201,7 +201,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                       state.items.isEmpty
                           ? 'No products yet'
                           : 'No products match your filters',
-                      style: AppTypography.bodyMd.copyWith(
+                      style: context.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
                     ),
@@ -325,7 +325,7 @@ class _FilterChip extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: AppTypography.bodySm.copyWith(
+              style: context.bodySm.copyWith(
                 color: selected
                     ? AppColors.onPrimary
                     : AppColors.onSurfaceVariant,
@@ -359,7 +359,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: AppTypography.bodyMd,
+              style: context.bodyMd,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -477,7 +477,7 @@ class _ProductCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         product.name,
-                        style: AppTypography.bodyMd.copyWith(
+                        style: context.bodyMd.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                         maxLines: 1,
@@ -496,7 +496,7 @@ class _ProductCard extends StatelessWidget {
                   children: [
                     Text(
                       '৳ ${product.price.toStringAsFixed(0)}',
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w700,
                       ),
@@ -513,7 +513,7 @@ class _ProductCard extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       stockLabel,
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: stockColor,
                         fontWeight: state == StockState.healthy
                             ? FontWeight.w400
@@ -535,7 +535,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                   child: Text(
                     badgeLabel,
-                    style: AppTypography.caption.copyWith(
+                    style: context.caption.copyWith(
                       color: badgeFg,
                       fontWeight: FontWeight.w700,
                       fontSize: 10,

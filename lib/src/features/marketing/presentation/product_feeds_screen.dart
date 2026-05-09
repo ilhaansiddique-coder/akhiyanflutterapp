@@ -96,7 +96,7 @@ class _ProductFeedsScreenState extends ConsumerState<ProductFeedsScreen> {
         scrolledUnderElevation: 1,
         title: Text(
           'Product Feeds',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -111,7 +111,7 @@ class _ProductFeedsScreenState extends ConsumerState<ProductFeedsScreen> {
             child: Text(
               'Could not load feed config.\n$e',
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMd
+              style: context.bodyMd
                   .copyWith(color: AppColors.onSurfaceVariant),
             ),
           ),
@@ -198,7 +198,7 @@ class _StatsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Feed health',
-              style: AppTypography.h3.copyWith(
+              style: context.h3.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,
@@ -244,7 +244,7 @@ class _StatsCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${stats.activeFlashSales} active flash sale${stats.activeFlashSales == 1 ? '' : 's'} feeding into ads',
-                    style: AppTypography.bodySm
+                    style: context.bodySm
                         .copyWith(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -283,7 +283,7 @@ class _Stat extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
               color: AppColors.outline,
               fontSize: 10,
               letterSpacing: 0.6,
@@ -293,7 +293,7 @@ class _Stat extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: AppTypography.h3.copyWith(
+            style: context.h3.copyWith(
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: color,
@@ -333,7 +333,7 @@ class _DefaultsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Defaults',
-              style: AppTypography.h3.copyWith(
+              style: context.h3.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,
@@ -342,7 +342,7 @@ class _DefaultsCard extends StatelessWidget {
           Text(
             'Applied to every product in the feed unless the product '
             'overrides the value.',
-            style: AppTypography.bodySm
+            style: context.bodySm
                 .copyWith(color: AppColors.outline, fontSize: 12),
           ),
           const SizedBox(height: AppSpacing.md - 4),

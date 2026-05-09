@@ -40,7 +40,6 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.11.0
   intl: ^0.20.2
-  google_fonts: ^8.0.2
   flutter_secure_storage: ^10.0.0
   shared_preferences: ^2.5.5
   flutter_localizations:
@@ -120,6 +119,39 @@ flutter:
   assets:
     - assets/branding/
     - shorebird.yaml
+
+  # Bundled fonts. Loaded from `assets/fonts/` at app start — no runtime
+  # network fetch (replaces the old `google_fonts` package). Mirrors the
+  # web stack defined in `AkhiyanEcom/src/app/globals.css`:
+  #   * BanglaDigits = Anek Bangla, used ONLY for Bengali digits ০–৯ + ৳ via
+  #     fontFamilyFallback (the TTF is subsetted upstream to those glyphs).
+  #   * HindSiliguri = primary body font, weights 300/400/500/600/700.
+  #   * BricolageGrotesque = headings, weights 500/700.
+  fonts:
+    - family: BanglaDigits
+      fonts:
+        - asset: assets/fonts/AnekBangla-400.ttf
+          weight: 400
+        - asset: assets/fonts/AnekBangla-700.ttf
+          weight: 700
+    - family: HindSiliguri
+      fonts:
+        - asset: assets/fonts/HindSiliguri-Light.ttf
+          weight: 300
+        - asset: assets/fonts/HindSiliguri-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/HindSiliguri-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/HindSiliguri-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/HindSiliguri-Bold.ttf
+          weight: 700
+    - family: BricolageGrotesque
+      fonts:
+        - asset: assets/fonts/BricolageGrotesque-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

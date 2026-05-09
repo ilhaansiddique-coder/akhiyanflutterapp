@@ -68,7 +68,7 @@ class StaffScreen extends StatelessWidget {
                           backgroundColor: AppColors.primaryContainer,
                           child: Text(
                             s.$1.substring(0, 1),
-                            style: AppTypography.bodyMd.copyWith(
+                            style: context.bodyMd.copyWith(
                               color: AppColors.primaryFixed,
                               fontWeight: FontWeight.w800,
                             ),
@@ -97,17 +97,17 @@ class StaffScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(s.$1,
-                              style: AppTypography.bodyMd
+                              style: context.bodyMd
                                   .copyWith(fontWeight: FontWeight.w700)),
                           Text(s.$2,
-                              style: AppTypography.bodySm.copyWith(
+                              style: context.bodySm.copyWith(
                                 color: AppColors.onSurfaceVariant,
                               )),
                         ],
                       ),
                     ),
                     Text(s.$3,
-                        style: AppTypography.caption.copyWith(
+                        style: context.caption.copyWith(
                           color: s.$4,
                           fontWeight: FontWeight.w600,
                         )),

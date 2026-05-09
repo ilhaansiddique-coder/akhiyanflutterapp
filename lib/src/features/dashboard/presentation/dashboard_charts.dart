@@ -60,7 +60,7 @@ class OrdersBarChartCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Last 7 Days Revenue',
-                  style: AppTypography.h3.copyWith(
+                  style: context.h3.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: AppColors.onBackground),
@@ -279,7 +279,7 @@ class StatusDonutCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Order Status Breakdown',
-                  style: AppTypography.h3.copyWith(
+                  style: context.h3.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: AppColors.onBackground),
@@ -309,14 +309,14 @@ class StatusDonutCard extends StatelessWidget {
                         children: [
                           Text(
                             '$total',
-                            style: AppTypography.h3.copyWith(
+                            style: context.h3.copyWith(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.onBackground),
                           ),
                           Text(
                             'orders',
-                            style: AppTypography.bodySm.copyWith(
+                            style: context.bodySm.copyWith(
                                 fontSize: 11,
                                 color: AppColors.outline,
                                 fontWeight: FontWeight.w700),
@@ -426,7 +426,7 @@ class _LegendRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: AppTypography.bodySm.copyWith(
+              style: context.bodySm.copyWith(
                   fontSize: 11,
                   color: AppColors.onBackground,
                   fontWeight: FontWeight.w600),
@@ -436,7 +436,7 @@ class _LegendRow extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '${pct.toStringAsFixed(0)}%',
-            style: AppTypography.bodySm.copyWith(
+            style: context.bodySm.copyWith(
                 fontSize: 11,
                 color: AppColors.outline,
                 fontWeight: FontWeight.w800),
@@ -460,7 +460,7 @@ class _EmptyChartHint extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: AppTypography.bodySm.copyWith(
+        style: context.bodySm.copyWith(
             color: AppColors.outline, fontSize: 12),
       ),
     );

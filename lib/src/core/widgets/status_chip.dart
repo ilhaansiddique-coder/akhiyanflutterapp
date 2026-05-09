@@ -42,7 +42,7 @@ class StatusChip extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: p.fg,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,

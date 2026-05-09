@@ -66,7 +66,7 @@ class _PageHeading extends StatelessWidget {
       children: [
         Text(
           'Marketing Overview',
-          style: AppTypography.h1.copyWith(
+          style: context.h1.copyWith(
             fontSize: 24,
             fontWeight: FontWeight.w700,
             color: AppColors.onSurface,
@@ -75,7 +75,7 @@ class _PageHeading extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Track performance and manage active campaigns across all channels.',
-          style: AppTypography.bodyMd.copyWith(
+          style: context.bodyMd.copyWith(
             color: AppColors.onSurfaceVariant,
           ),
         ),
@@ -135,7 +135,7 @@ class _PerformanceHero extends StatelessWidget {
                   children: [
                     Text(
                       'GROWTH PERFORMANCE',
-                      style: AppTypography.caption.copyWith(
+                      style: context.caption.copyWith(
                         color: AppColors.onPrimary.withValues(alpha: 0.8),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -148,7 +148,7 @@ class _PerformanceHero extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   headline,
-                  style: AppTypography.h2.copyWith(
+                  style: context.h2.copyWith(
                     color: AppColors.onPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
@@ -157,7 +157,7 @@ class _PerformanceHero extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subline,
-                  style: AppTypography.bodySm.copyWith(
+                  style: context.bodySm.copyWith(
                     color: AppColors.onPrimary.withValues(alpha: 0.7),
                   ),
                 ),
@@ -227,7 +227,7 @@ class _GrowthPillState extends State<_GrowthPill>
           const SizedBox(width: 6),
           Text(
             widget.label,
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
               color: const Color(0xFF34D399),
               fontWeight: FontWeight.w700,
               fontSize: 11,
@@ -365,14 +365,14 @@ class _ToolCard extends StatelessWidget {
           const SizedBox(height: 32),
           Text(
             title,
-            style: AppTypography.h3.copyWith(fontSize: 16),
+            style: context.h3.copyWith(fontSize: 16),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
             description,
-            style: AppTypography.bodySm.copyWith(
+            style: context.bodySm.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
             maxLines: 2,
@@ -397,7 +397,7 @@ class _StatIndicator extends StatelessWidget {
       children: [
         Text(
           value,
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.w800,
             height: 1,
@@ -406,7 +406,7 @@ class _StatIndicator extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           caption,
-          style: AppTypography.caption.copyWith(
+          style: context.caption.copyWith(
             color: AppColors.onSurfaceVariant,
             fontSize: 10,
             fontWeight: FontWeight.w600,
@@ -435,7 +435,7 @@ class _RecentCampaigns extends StatelessWidget {
           children: [
             Text(
               'Recent Campaigns',
-              style: AppTypography.h2.copyWith(fontSize: 20),
+              style: context.h2.copyWith(fontSize: 20),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).maybePop(),
@@ -449,7 +449,7 @@ class _RecentCampaigns extends StatelessWidget {
           child: Center(
             child: Text(
               'No active campaigns yet',
-              style: AppTypography.bodyMd.copyWith(
+              style: context.bodyMd.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
             ),

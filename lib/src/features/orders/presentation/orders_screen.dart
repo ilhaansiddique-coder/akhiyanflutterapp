@@ -200,7 +200,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       state.items.isEmpty
                           ? 'No orders yet'
                           : 'No orders match your filters',
-                      style: AppTypography.bodyMd.copyWith(
+                      style: context.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
                     ),
@@ -360,7 +360,7 @@ class _FilterChip extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: AppTypography.bodySm.copyWith(
+              style: context.bodySm.copyWith(
                 color: selected
                     ? AppColors.onPrimary
                     : AppColors.onSurfaceVariant,
@@ -394,7 +394,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: AppTypography.bodyMd,
+              style: context.bodyMd,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -459,14 +459,14 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Text(
                       displayId,
-                      style: AppTypography.h3.copyWith(
+                      style: context.h3.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
                       _timeAgo(order.createdAt),
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.outline,
                       ),
                     ),
@@ -497,7 +497,7 @@ class _OrderCard extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   initial,
-                  style: AppTypography.bodyMd.copyWith(
+                  style: context.bodyMd.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.onSurfaceVariant,
                   ),
@@ -512,7 +512,7 @@ class _OrderCard extends StatelessWidget {
                       order.customerName.isEmpty
                           ? 'Unknown'
                           : order.customerName,
-                      style: AppTypography.bodyMd.copyWith(
+                      style: context.bodyMd.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -520,7 +520,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                     Text(
                       order.customerPhone ?? '',
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.outline,
                       ),
                     ),
@@ -542,7 +542,7 @@ class _OrderCard extends StatelessWidget {
                   label: 'ITEMS',
                   child: Text(
                     itemsLabel,
-                    style: AppTypography.bodyMd.copyWith(
+                    style: context.bodyMd.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -567,7 +567,7 @@ class _OrderCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         _payLabel(payment),
-                        style: AppTypography.bodyMd.copyWith(
+                        style: context.bodyMd.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -580,7 +580,7 @@ class _OrderCard extends StatelessWidget {
                   children: [
                     Text(
                       'TOTAL',
-                      style: AppTypography.caption.copyWith(
+                      style: context.caption.copyWith(
                         color: AppColors.outline,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -628,7 +628,7 @@ class _MetaCol extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
+          style: context.caption.copyWith(
             color: AppColors.outline,
             fontSize: 11,
             fontWeight: FontWeight.w700,

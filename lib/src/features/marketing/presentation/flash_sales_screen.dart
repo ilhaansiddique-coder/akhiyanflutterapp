@@ -42,7 +42,7 @@ class _FlashSalesScreenState extends ConsumerState<FlashSalesScreen> {
         scrolledUnderElevation: 1,
         title: Text(
           'Flash Sales',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -98,7 +98,7 @@ class _CreateOnWebHint extends StatelessWidget {
               'Create new flash sales on the web admin (the product '
               'picker needs more screen real estate). Pause, resume, or '
               'delete campaigns from here.',
-              style: AppTypography.bodySm
+              style: context.bodySm
                   .copyWith(fontSize: 12, height: 1.4),
             ),
           ),
@@ -128,7 +128,7 @@ class _SalesList extends ConsumerWidget {
             q.isEmpty
                 ? 'No flash sales yet. Create one on the web admin.'
                 : 'No sales match "$query"',
-            style: AppTypography.bodyMd
+            style: context.bodyMd
                 .copyWith(color: AppColors.onSurfaceVariant),
           ),
         ),
@@ -251,7 +251,7 @@ class _SaleCardState extends ConsumerState<_SaleCard> {
               Expanded(
                 child: Text(
                   s.title.isEmpty ? '(untitled)' : s.title,
-                  style: AppTypography.h3.copyWith(
+                  style: context.h3.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.onBackground,
@@ -280,7 +280,7 @@ class _SaleCardState extends ConsumerState<_SaleCard> {
                     const Icon(Icons.play_arrow, size: 14),
                     const SizedBox(width: 4),
                     Text(_formatDateTime(s.startsAt),
-                        style: AppTypography.bodySm
+                        style: context.bodySm
                             .copyWith(fontSize: 12)),
                   ],
                 ),
@@ -290,7 +290,7 @@ class _SaleCardState extends ConsumerState<_SaleCard> {
                     const Icon(Icons.stop, size: 14),
                     const SizedBox(width: 4),
                     Text(_formatDateTime(s.endsAt),
-                        style: AppTypography.bodySm
+                        style: context.bodySm
                             .copyWith(fontSize: 12)),
                   ],
                 ),
@@ -300,7 +300,7 @@ class _SaleCardState extends ConsumerState<_SaleCard> {
                     const Icon(Icons.shopping_bag_outlined, size: 14),
                     const SizedBox(width: 4),
                     Text('${s.productCount} product${s.productCount == 1 ? '' : 's'}',
-                        style: AppTypography.bodySm
+                        style: context.bodySm
                             .copyWith(fontSize: 12)),
                   ],
                 ),
@@ -318,7 +318,7 @@ class _SaleCardState extends ConsumerState<_SaleCard> {
                   onChanged: _busy ? null : (_) => _toggleActive(),
                   title: Text(
                     s.isActive ? 'Active' : 'Paused',
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       color: s.isActive
                           ? AppColors.onBackground
                           : AppColors.outline,
@@ -378,7 +378,7 @@ class _StateBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: fg,
           fontWeight: FontWeight.w800,
           fontSize: 10,

@@ -43,7 +43,7 @@ class _CouponsScreenState extends ConsumerState<CouponsScreen> {
         scrolledUnderElevation: 1,
         title: Text(
           'Coupons',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -124,7 +124,7 @@ class _CouponsList extends ConsumerWidget {
             q.isEmpty
                 ? 'No coupons yet. Tap + to create one.'
                 : 'No coupons match "$query"',
-            style: AppTypography.bodyMd
+            style: context.bodyMd
                 .copyWith(color: AppColors.onSurfaceVariant),
           ),
         ),
@@ -252,7 +252,7 @@ class _CouponCardState extends ConsumerState<_CouponCard> {
                       children: [
                         Text(
                           c.code,
-                          style: AppTypography.h3.copyWith(
+                          style: context.h3.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: AppColors.onBackground,
@@ -270,7 +270,7 @@ class _CouponCardState extends ConsumerState<_CouponCard> {
                     const SizedBox(height: 2),
                     Text(
                       '${_valueLabel(c)} off · min ৳${c.minOrderAmount.toStringAsFixed(0)}',
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: AppColors.outline,
                         fontSize: 12,
                       ),
@@ -321,7 +321,7 @@ class _CouponCardState extends ConsumerState<_CouponCard> {
                   onChanged: _busy ? null : (_) => _toggleActive(),
                   title: Text(
                     disabled ? 'Paused or expired' : 'Live',
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       color: disabled
                           ? AppColors.outline
                           : AppColors.onBackground,
@@ -362,7 +362,7 @@ class _SmallPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: fg,
           fontWeight: FontWeight.w800,
           fontSize: 9,
@@ -384,14 +384,14 @@ class _MetaCol extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
                 color: AppColors.outline,
                 fontSize: 9,
                 letterSpacing: 0.4,
                 fontWeight: FontWeight.w800)),
         const SizedBox(height: 1),
         Text(value,
-            style: AppTypography.bodySm.copyWith(
+            style: context.bodySm.copyWith(
                 color: AppColors.onBackground,
                 fontSize: 12,
                 fontWeight: FontWeight.w700)),
@@ -512,7 +512,7 @@ class _NewCouponSheetState extends ConsumerState<_NewCouponSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('New Coupon',
-                style: AppTypography.h3
+                style: context.h3
                     .copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: AppSpacing.md),
             TextField(
@@ -592,7 +592,7 @@ class _NewCouponSheetState extends ConsumerState<_NewCouponSheet> {
             if (_error != null) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(_error!,
-                  style: AppTypography.bodySm
+                  style: context.bodySm
                       .copyWith(color: AppColors.error)),
             ],
             const SizedBox(height: AppSpacing.md),

@@ -173,7 +173,7 @@ class _LandingPageFormScreenState
             data: (p) => p.title.isEmpty ? 'Edit page' : p.title,
             orElse: () => 'Edit page',
           ),
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -200,7 +200,7 @@ class _LandingPageFormScreenState
             child: Text(
               'Could not load page.\n$e',
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMd
+              style: context.bodyMd
                   .copyWith(color: AppColors.onSurfaceVariant),
             ),
           ),
@@ -272,7 +272,7 @@ class _Form extends StatelessWidget {
                       isActive
                           ? 'Visible to visitors'
                           : 'Saved as draft, not public',
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                           color: AppColors.outline, fontSize: 12),
                     ),
                     contentPadding: EdgeInsets.zero,
@@ -417,7 +417,7 @@ class _RichSectionsSummary extends StatelessWidget {
               const Icon(Icons.lock_outline, size: 16),
               const SizedBox(width: AppSpacing.sm),
               Text('Edit on web admin',
-                  style: AppTypography.bodyMd.copyWith(
+                  style: context.bodyMd.copyWith(
                       fontSize: 13, fontWeight: FontWeight.w800)),
             ],
           ),
@@ -425,7 +425,7 @@ class _RichSectionsSummary extends StatelessWidget {
           Text(
             'These rich sections stay editable on the web admin. Mobile '
             'preserves their content on save — nothing is lost.',
-            style: AppTypography.bodySm
+            style: context.bodySm
                 .copyWith(fontSize: 12, height: 1.4),
           ),
           const SizedBox(height: AppSpacing.sm + 4),
@@ -438,7 +438,7 @@ class _RichSectionsSummary extends StatelessWidget {
                     width: 130,
                     child: Text(
                       e.$1,
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                           color: AppColors.outline,
                           fontSize: 12,
                           fontWeight: FontWeight.w600),
@@ -447,7 +447,7 @@ class _RichSectionsSummary extends StatelessWidget {
                   Expanded(
                     child: Text(
                       e.$2,
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                           color: AppColors.onBackground,
                           fontSize: 12,
                           fontWeight: FontWeight.w600),
@@ -482,7 +482,7 @@ class _Section extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: AppTypography.h3.copyWith(
+              style: context.h3.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: AppColors.primary,

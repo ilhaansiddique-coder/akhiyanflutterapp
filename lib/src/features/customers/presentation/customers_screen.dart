@@ -180,7 +180,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         ),
         title: Text(
           'Akhiyan Admin',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -238,7 +238,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     Text(
                       'Users',
-                      style: AppTypography.h1.copyWith(
+                      style: context.h1.copyWith(
                         fontSize: 24,
                         height: 1.1,
                         fontWeight: FontWeight.w800,
@@ -484,7 +484,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           ),
           filled: true,
           fillColor: AppColors.surfaceContainerLowest,
-          hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
+          hintStyle: context.bodyMd.copyWith(color: AppColors.outline),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
             borderSide: const BorderSide(color: AppColors.slateBorder),
@@ -508,7 +508,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
       child: Center(
         child: Text(
           text,
-          style: AppTypography.bodyMd
+          style: context.bodyMd
               .copyWith(color: AppColors.onSurfaceVariant),
         ),
       ),
@@ -648,7 +648,7 @@ class _RoleFilterChip extends StatelessWidget {
           children: [
             Text(
               selected.label,
-              style: AppTypography.bodySm.copyWith(
+              style: context.bodySm.copyWith(
                 color: AppColors.onBackground,
                 fontWeight: FontWeight.w700,
               ),
@@ -727,7 +727,7 @@ class _CustomerCard extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       initials,
-                      style: AppTypography.h3.copyWith(
+                      style: context.h3.copyWith(
                         color: palette.fg,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -741,7 +741,7 @@ class _CustomerCard extends StatelessWidget {
                       children: [
                         Text(
                           customer.name.isEmpty ? 'Unknown' : customer.name,
-                          style: AppTypography.h3.copyWith(
+                          style: context.h3.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: AppColors.onBackground,
@@ -752,7 +752,7 @@ class _CustomerCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           customer.email ?? customer.phone ?? '',
-                          style: AppTypography.bodySm.copyWith(
+                          style: context.bodySm.copyWith(
                             color: AppColors.outline,
                             fontSize: 12,
                           ),
@@ -849,7 +849,7 @@ class _StaffCard extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               initials,
-              style: AppTypography.h3.copyWith(
+              style: context.h3.copyWith(
                 color: palette.fg,
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
@@ -863,7 +863,7 @@ class _StaffCard extends StatelessWidget {
               children: [
                 Text(
                   member.name.isEmpty ? 'Unknown' : member.name,
-                  style: AppTypography.h3.copyWith(
+                  style: context.h3.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.onBackground,
@@ -874,7 +874,7 @@ class _StaffCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   member.email ?? member.phone ?? '—',
-                  style: AppTypography.bodySm.copyWith(
+                  style: context.bodySm.copyWith(
                     color: AppColors.outline,
                     fontSize: 12,
                   ),
@@ -966,7 +966,7 @@ class _RolePill extends ConsumerWidget {
       ),
       child: Text(
         label,
-        style: AppTypography.caption.copyWith(
+        style: context.caption.copyWith(
           color: fg,
           fontWeight: FontWeight.w700,
           fontSize: 10,
@@ -1031,7 +1031,7 @@ class _MetaCol extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTypography.caption.copyWith(
+          style: context.caption.copyWith(
             color: AppColors.outline,
             letterSpacing: 0.4,
             fontWeight: FontWeight.w700,
@@ -1041,7 +1041,7 @@ class _MetaCol extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
-          style: AppTypography.bodySm.copyWith(
+          style: context.bodySm.copyWith(
             color: valueColor ?? AppColors.onBackground,
             fontWeight: FontWeight.w700,
             fontSize: 13,
@@ -1290,7 +1290,7 @@ class _EditStaffDialogState extends ConsumerState<_EditStaffDialog> {
               const SizedBox(height: AppSpacing.md),
               Text(
                 _error!,
-                style: AppTypography.bodySm.copyWith(color: AppColors.error),
+                style: context.bodySm.copyWith(color: AppColors.error),
               ),
             ],
           ],
@@ -1465,7 +1465,7 @@ class NewUserDialogState extends ConsumerState<NewUserDialog> {
               const SizedBox(height: AppSpacing.md),
               Text(
                 _error!,
-                style: AppTypography.bodySm.copyWith(color: AppColors.error),
+                style: context.bodySm.copyWith(color: AppColors.error),
               ),
             ],
           ],

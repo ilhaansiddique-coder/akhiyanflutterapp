@@ -83,7 +83,7 @@ class ShortlinksScreen extends StatelessWidget {
                                     fontWeight: FontWeight.w700,
                                   )),
                               Text(l.$2,
-                                  style: AppTypography.bodySm.copyWith(
+                                  style: context.bodySm.copyWith(
                                     color: AppColors.onSurfaceVariant,
                                   )),
                             ],
@@ -127,7 +127,7 @@ class _Metric extends StatelessWidget {
         Icon(icon, size: 14, color: AppColors.onSurfaceVariant),
         const SizedBox(width: 4),
         Text(label,
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
               color: AppColors.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             )),

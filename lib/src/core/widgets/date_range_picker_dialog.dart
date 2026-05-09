@@ -30,15 +30,46 @@ Future<DateTimeRange?> showAdvancedDateRangePicker(
       );
 
   if (isPhone) {
-    return Navigator.of(context).push<DateTimeRange?>(
-      PageRouteBuilder(
-        opaque: false,
-        barrierColor: Colors.black54,
-        pageBuilder: (ctx, _, _) => _AdvancedDateRangePicker(
-          initial: initial,
-          firstDate: first,
-          lastDate: last,
-          fullScreen: true,
+    return showModalBottomSheet<DateTimeRange?>(
+      context: context,
+      isScrollControlled: true,
+      // Transparent so we can paint our own inset, fully-rounded card inside
+      // the builder. This lets the dashboard show through on all four sides
+      // around the sheet (matches the design spec).
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (ctx) => Padding(
+        // Inset the whole sheet from screen edges + lift above keyboard.
+        padding: EdgeInsets.only(
+          left: AppSpacing.md,
+          right: AppSpacing.md,
+          bottom: MediaQuery.viewInsetsOf(ctx).bottom + AppSpacing.md,
+        ),
+        child: SafeArea(
+          top: false,
+          child: ConstrainedBox(
+            // Cap height so on tiny phones (or landscape) the sheet can't
+            // exceed the screen. Content normally sizes much smaller than
+            // this and the sheet will hug it.
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(ctx).height * 0.92,
+            ),
+            // Rounded on all four corners (no longer flush to bottom edge),
+            // clipping the picker so its inkwell ripples don't leak past
+            // the corner radius.
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.xLarge),
+              child: Material(
+                color: AppColors.surfaceContainerLowest,
+                child: _AdvancedDateRangePicker(
+                  initial: initial,
+                  firstDate: first,
+                  lastDate: last,
+                  fullScreen: true,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -310,46 +341,161 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
     final isPhone = widget.fullScreen;
     return Material(
       color: AppColors.surfaceContainerLowest,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Text(
-                    'Select date range',
-                    style: AppTypography.h3.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.onBackground,
-                    ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (isPhone)
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  const Spacer(),
-                  if (isPhone)
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      color: AppColors.onSurfaceVariant,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                ],
+                ),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Expanded(
-                child: isPhone
-                    ? _buildPhoneLayout()
-                    : _buildDesktopLayout(),
-              ),
+            // Header
+            Row(
+              children: [
+                Text(
+                  isPhone ? 'Select date' : 'Select date range',
+                  style: context.h3.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onBackground,
+                  ),
+                ),
+                const Spacer(),
+                if (isPhone)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    color: AppColors.onSurfaceVariant,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (isPhone) ...[
+              _buildPhoneLayout(),
+              const SizedBox(height: AppSpacing.sm),
+              _buildPhoneBottom(),
+              const SizedBox(height: AppSpacing.sm),
+            ] else ...[
+              Expanded(child: _buildDesktopLayout()),
               const SizedBox(height: AppSpacing.md),
               _buildRangeLabels(),
               const SizedBox(height: AppSpacing.md),
               _buildActions(),
             ],
-          ),
+          ],
         ),
       ),
+    );
+  }
+
+  /// Phone-only bottom row: compact "May 9 — May 9" range text on the left,
+  /// Reset (outlined) + Done (filled) on the right. Matches the design spec
+  /// in the dashboard mock.
+  Widget _buildPhoneBottom() {
+    final fmt = DateFormat('MMM d');
+    final rangeText = _start == _end
+        ? fmt.format(_start)
+        : '${fmt.format(_start)} — ${fmt.format(_end)}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
+          child: Text(
+            rangeText,
+            style: context.bodySm.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  // Reset the in-picker selection back to today (the dashboard
+                  // default). User still has to tap Done to apply.
+                  setState(() {
+                    final now = DateTime.now();
+                    final today = DateTime(now.year, now.month, now.day);
+                    _start = today;
+                    _end = today;
+                    _pendingAnchor = null;
+                    _visibleMonth = DateTime(today.year, today.month);
+                    _activePreset = _detectPreset(_start, _end);
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  backgroundColor: AppColors.primaryFixed,
+                  side: BorderSide.none,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                child: Text(
+                  'Reset',
+                  style: context.bodyMd.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(
+                  DateTimeRange(
+                    start: _start,
+                    end: DateTime(
+                      _end.year,
+                      _end.month,
+                      _end.day,
+                      23,
+                      59,
+                      59,
+                      999,
+                    ),
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                child: Text(
+                  'Done',
+                  style: context.bodyMd.copyWith(
+                    color: AppColors.onPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -372,11 +518,54 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
 
   Widget _buildPhoneLayout() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildPresets(columns: 2),
-        const SizedBox(height: AppSpacing.md),
-        Expanded(child: _buildCalendar(monthsToShow: 1)),
+        _buildPhonePresetPills(),
+        const SizedBox(height: AppSpacing.sm),
+        // Calendar wrapped in a soft card so it visually groups apart from
+        // the presets and the action buttons. Sized to content (no empty
+        // tail) thanks to `fillHeight: false` below. Outer `margin` adds
+        // breathing room on all four sides so the card floats inside the
+        // sheet rather than touching the presets / buttons.
+        Container(
+          // Horizontal margin only — vertical breathing room comes from the
+          // SizedBox spacers above (in _buildPhoneLayout) and below (in the
+          // outer build), so we don't double up.
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(AppRadius.xLarge),
+            border: Border.all(color: AppColors.outlineVariant),
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sm,
+            AppSpacing.sm,
+            AppSpacing.sm,
+            AppSpacing.md,
+          ),
+          child: _buildCalendar(monthsToShow: 1, fillHeight: false),
+        ),
+      ],
+    );
+  }
+
+  /// Pill-shaped, free-flow preset chips for the phone bottom-sheet — no
+  /// "PRESETS" label, no fixed grid. Order mirrors the dashboard mock.
+  Widget _buildPhonePresetPills() {
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: [
+        for (final p in _gridPresets)
+          _PresetChip(
+            label: p.label,
+            active: _activePreset == p,
+            onTap: () => _applyPreset(p),
+            pill: true,
+          ),
       ],
     );
   }
@@ -394,7 +583,7 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
           padding: const EdgeInsets.only(left: 2, bottom: AppSpacing.xs),
           child: Text(
             'PRESETS',
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
               color: AppColors.onSurfaceVariant,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
@@ -426,12 +615,32 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
     );
   }
 
-  Widget _buildCalendar({required int monthsToShow}) {
+  Widget _buildCalendar({required int monthsToShow, bool fillHeight = true}) {
     final months = <DateTime>[
       for (var i = 0; i < monthsToShow; i++)
         DateTime(_visibleMonth.year, _visibleMonth.month + i),
     ];
+    final daysRow = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < months.length; i++) ...[
+          Expanded(
+            child: _MonthGrid(
+              month: months[i],
+              rangeStart: _start,
+              rangeEnd: _end,
+              firstDate: widget.firstDate,
+              lastDate: widget.lastDate,
+              onDayTap: _onDayTap,
+            ),
+          ),
+          if (i < months.length - 1)
+            const SizedBox(width: AppSpacing.md),
+        ],
+      ],
+    );
     return Column(
+      mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Month nav header
@@ -448,7 +657,7 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
                   for (final m in months)
                     Text(
                       DateFormat('MMMM yyyy').format(m),
-                      style: AppTypography.bodyMd.copyWith(
+                      style: context.bodyMd.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.onBackground,
                       ),
@@ -463,25 +672,10 @@ class _AdvancedDateRangePickerState extends State<_AdvancedDateRangePicker> {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < months.length; i++) ...[
-                Expanded(child: _MonthGrid(
-                  month: months[i],
-                  rangeStart: _start,
-                  rangeEnd: _end,
-                  firstDate: widget.firstDate,
-                  lastDate: widget.lastDate,
-                  onDayTap: _onDayTap,
-                )),
-                if (i < months.length - 1)
-                  const SizedBox(width: AppSpacing.md),
-              ],
-            ],
-          ),
-        ),
+        // On phone we want the grid to size to its (intrinsic) content so the
+        // sheet hugs the calendar — no empty space below. On desktop we keep
+        // Expanded so the dialog body fills its fixed maxHeight.
+        if (fillHeight) Expanded(child: daysRow) else daysRow,
       ],
     );
   }
@@ -574,13 +768,45 @@ class _PresetChip extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
+    this.pill = false,
   });
   final String label;
   final bool active;
   final VoidCallback onTap;
 
+  /// When `true`, renders as a fully-rounded pill (active = solid orange,
+  /// idle = neutral grey-blue). Used by the phone bottom-sheet to match the
+  /// dashboard date-picker mock.
+  final bool pill;
+
   @override
   Widget build(BuildContext context) {
+    if (pill) {
+      final bg = active ? AppColors.primary : AppColors.backgroundAlt;
+      final fg = active ? AppColors.onPrimary : AppColors.onBackground;
+      return Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 9,
+            ),
+            child: Text(
+              label,
+              style: context.bodySm.copyWith(
+                color: fg,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     // The codebase's `primaryContainer` token is the dark brand surface, so
     // for an active *light* tint we use `primaryFixed` (light lavender), which
     // is the project's actual M3 light-container color.
@@ -610,7 +836,7 @@ class _PresetChip extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.bodySm.copyWith(
+            style: context.bodySm.copyWith(
               color: fg,
               fontWeight: active ? FontWeight.w700 : FontWeight.w500,
             ),
@@ -640,32 +866,39 @@ class _MonthGrid extends StatelessWidget {
   final DateTime lastDate;
   final ValueChanged<DateTime> onDayTap;
 
+  // Fixed cell count keeps the calendar card a constant height regardless
+  // of whether the month spans 4, 5, or 6 weeks. 6 rows × 7 cols is the
+  // worst case (e.g. a month that starts on Sunday and has 31 days).
+  static const int _totalCells = 6 * 7;
+
   @override
   Widget build(BuildContext context) {
     final firstOfMonth = DateTime(month.year, month.month);
-    // Monday=1 ... Sunday=7. We render Sun-first to match BD/US convention.
-    final leadingBlanks = firstOfMonth.weekday % 7; // Sun=0, Mon=1, ...
+    // DateTime.weekday returns Mon=1 ... Sun=7. We render Mon-first to match
+    // the design spec (matches the dashboard date-picker mock).
+    final leadingBlanks = (firstOfMonth.weekday - 1) % 7; // Mon=0, ..., Sun=6
     final daysInMonth =
         DateTime(month.year, month.month + 1, 0).day;
-    final totalCells =
-        ((leadingBlanks + daysInMonth) / 7).ceil() * 7;
+    final daysInPrevMonth =
+        DateTime(month.year, month.month, 0).day; // day 0 of this month = last day prev
 
     final firstCap = DateTime(firstDate.year, firstDate.month, firstDate.day);
     final lastCap = DateTime(lastDate.year, lastDate.month, lastDate.day);
 
     return Column(
       children: [
-        // Weekday headers
+        // Weekday headers (Mon-first, two-letter caps).
         Row(
           children: [
-            for (final d in const ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+            for (final d in const ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'])
               Expanded(
                 child: Center(
                   child: Text(
                     d,
-                    style: AppTypography.caption.copyWith(
+                    style: context.caption.copyWith(
                       color: AppColors.onSurfaceVariant,
                       fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ),
@@ -673,8 +906,8 @@ class _MonthGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        // Day grid
-        for (var row = 0; row < totalCells / 7; row++)
+        // Day grid — always 6 rows.
+        for (var row = 0; row < _totalCells / 7; row++)
           Row(
             children: [
               for (var col = 0; col < 7; col++)
@@ -683,6 +916,7 @@ class _MonthGrid extends StatelessWidget {
                     index: row * 7 + col,
                     leadingBlanks: leadingBlanks,
                     daysInMonth: daysInMonth,
+                    daysInPrevMonth: daysInPrevMonth,
                     firstCap: firstCap,
                     lastCap: lastCap,
                   ),
@@ -697,57 +931,134 @@ class _MonthGrid extends StatelessWidget {
     required int index,
     required int leadingBlanks,
     required int daysInMonth,
+    required int daysInPrevMonth,
     required DateTime firstCap,
     required DateTime lastCap,
   }) {
     final dayNum = index - leadingBlanks + 1;
-    if (dayNum < 1 || dayNum > daysInMonth) {
-      return const SizedBox(height: 36);
+    // Leading cell from previous month — render the actual date number in a
+    // muted color, no band, no tap. Keeps the card height constant and
+    // matches the design spec.
+    if (dayNum < 1) {
+      final prevDayNum = daysInPrevMonth + dayNum; // dayNum is 0 or negative
+      return SizedBox(
+        height: 36,
+        child: Center(
+          child: Text(
+            '$prevDayNum',
+            style: AppTypography.bodySm.copyWith(
+              color: AppColors.outlineVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }
+    // Trailing cell from next month — same treatment.
+    if (dayNum > daysInMonth) {
+      final nextDayNum = dayNum - daysInMonth;
+      return SizedBox(
+        height: 36,
+        child: Center(
+          child: Text(
+            '$nextDayNum',
+            style: AppTypography.bodySm.copyWith(
+              color: AppColors.outlineVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
     }
     final date = DateTime(month.year, month.month, dayNum);
     final isStart = date == rangeStart;
     final isEnd = date == rangeEnd;
     final inRange = !date.isBefore(rangeStart) && !date.isAfter(rangeEnd);
     final isEndpoint = isStart || isEnd;
+    final isSingleDay = isStart && isEnd;
     final disabled = date.isBefore(firstCap) || date.isAfter(lastCap);
 
-    Color? bg;
-    var fg = AppColors.onBackground;
-    var weight = FontWeight.w500;
+    // Two-half band painting:
+    //   • middle in-range cell  → both halves filled  → continuous strip
+    //   • start cell            → only right half     → strip points right
+    //   • end cell              → only left half      → strip arrives from left
+    //   • single-day selection  → no band, just the circle
+    final showLeftHalf = inRange && !isStart && !isSingleDay;
+    final showRightHalf = inRange && !isEnd && !isSingleDay;
+    final bandColor = AppColors.primary.withValues(alpha: 0.12);
+
+    // Foreground text color.
+    Color fg;
+    FontWeight weight;
     if (disabled) {
       fg = AppColors.outline;
+      weight = FontWeight.w500;
     } else if (isEndpoint) {
-      bg = AppColors.primary;
       fg = AppColors.onPrimary;
       weight = FontWeight.w700;
     } else if (inRange) {
-      // Light lavender tint — see `_PresetChip` note on container token usage.
-      bg = AppColors.primaryFixed;
-      fg = AppColors.onPrimaryFixed;
+      fg = AppColors.onBackground;
       weight = FontWeight.w600;
+    } else {
+      fg = AppColors.onBackground;
+      weight = FontWeight.w500;
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(2),
-      child: Material(
-        color: bg ?? Colors.transparent,
-        borderRadius: BorderRadius.circular(AppRadius.medium),
-        child: InkWell(
-          onTap: disabled ? null : () => onDayTap(date),
-          borderRadius: BorderRadius.circular(AppRadius.medium),
-          child: SizedBox(
-            height: 36,
-            child: Center(
-              child: Text(
-                '$dayNum',
-                style: AppTypography.bodySm.copyWith(
-                  color: fg,
-                  fontWeight: weight,
+    return SizedBox(
+      height: 36,
+      child: Stack(
+        children: [
+          // Layer 1: peach band (split into left/right halves so adjacent
+          // cells join into a continuous strip with no gaps).
+          Positioned.fill(
+            child: Row(
+              children: [
+                Expanded(
+                  child: ColoredBox(
+                    color: showLeftHalf ? bandColor : Colors.transparent,
+                  ),
+                ),
+                Expanded(
+                  child: ColoredBox(
+                    color: showRightHalf ? bandColor : Colors.transparent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Layer 2: solid orange endpoint circle, sitting on top of the band.
+          if (isEndpoint && !disabled)
+            const Center(
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          // Layer 3: tap target + day number text, on top of everything.
+          Positioned.fill(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: disabled ? null : () => onDayTap(date),
+                child: Center(
+                  child: Text(
+                    '$dayNum',
+                    style: AppTypography.bodySm.copyWith(
+                      color: fg,
+                      fontWeight: weight,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -795,7 +1106,7 @@ class _RangeField extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
               color: AppColors.onSurfaceVariant,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
@@ -804,7 +1115,7 @@ class _RangeField extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: AppTypography.bodyMd.copyWith(
+            style: context.bodyMd.copyWith(
               color: AppColors.onBackground,
               fontWeight: FontWeight.w700,
             ),

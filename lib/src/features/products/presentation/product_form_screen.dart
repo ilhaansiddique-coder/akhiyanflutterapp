@@ -331,7 +331,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         ),
         title: Text(
           _isEdit ? 'Edit Product' : 'Add Product',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -432,7 +432,7 @@ class _FieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         text,
-        style: AppTypography.bodySm.copyWith(
+        style: context.bodySm.copyWith(
           color: AppColors.onSurface,
           fontWeight: FontWeight.w600,
           fontSize: 13,
@@ -480,7 +480,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: AppTypography.h3.copyWith(fontSize: 16),
+      style: context.h3.copyWith(fontSize: 16),
     );
   }
 }
@@ -515,7 +515,7 @@ class _ImagesSection extends StatelessWidget {
             children: [
               Text(
                 'PRODUCT IMAGES',
-                style: AppTypography.caption.copyWith(
+                style: context.caption.copyWith(
                   color: AppColors.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1,
@@ -524,7 +524,7 @@ class _ImagesSection extends StatelessWidget {
               ),
               Text(
                 '${urls.length}/$max images',
-                style: AppTypography.bodySm.copyWith(
+                style: context.bodySm.copyWith(
                   color: AppColors.outline,
                 ),
               ),
@@ -1130,14 +1130,14 @@ class _VariantsSectionState extends State<_VariantsSection> {
       children: [
         Text(
           '$label:',
-          style: AppTypography.bodySm.copyWith(
+          style: context.bodySm.copyWith(
             color: AppColors.onSurfaceVariant,
           ),
         ),
         const SizedBox(width: 4),
         Text(
           value,
-          style: AppTypography.bodySm.copyWith(
+          style: context.bodySm.copyWith(
             color: AppColors.onSurface,
             fontWeight: FontWeight.w600,
           ),
@@ -1166,7 +1166,7 @@ class _StatusSection extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Make this product visible to customers',
-            style: AppTypography.bodySm.copyWith(
+            style: context.bodySm.copyWith(
               color: AppColors.onSurfaceVariant,
             ),
           ),
@@ -1303,7 +1303,7 @@ class _ActionBar extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     isEdit ? 'Delete' : 'Save Draft',
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -1340,7 +1340,7 @@ class _ActionBar extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         child: Text(
                           isEdit ? 'Save Changes' : 'Publish Product',
-                          style: AppTypography.bodySm.copyWith(
+                          style: context.bodySm.copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),

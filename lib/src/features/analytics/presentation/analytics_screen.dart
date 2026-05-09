@@ -110,7 +110,7 @@ class AnalyticsScreen extends ConsumerWidget {
               _ChartCard(points: data.revenueChart),
               const SizedBox(height: AppSpacing.lg),
               Text('Top Products',
-                  style: AppTypography.h3.copyWith(fontSize: 18)),
+                  style: context.h3.copyWith(fontSize: 18)),
               const SizedBox(height: AppSpacing.sm),
               if (data.topProducts.isEmpty)
                 Padding(
@@ -118,7 +118,7 @@ class AnalyticsScreen extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       'No sales data yet',
-                      style: AppTypography.bodyMd.copyWith(
+                      style: context.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
                     ),
@@ -147,7 +147,7 @@ class AnalyticsScreen extends ConsumerWidget {
                                   Expanded(
                                     child: Text(
                                       tp.product.name,
-                                      style: AppTypography.bodyMd.copyWith(
+                                      style: context.bodyMd.copyWith(
                                           fontWeight: FontWeight.w600),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -155,7 +155,7 @@ class AnalyticsScreen extends ConsumerWidget {
                                   ),
                                   Text(
                                     _formatCompact(tp.product.revenue),
-                                    style: AppTypography.bodyMd.copyWith(
+                                    style: context.bodyMd.copyWith(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -233,9 +233,9 @@ class _ChartCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Revenue Trend',
-                  style: AppTypography.h3.copyWith(fontSize: 16)),
+                  style: context.h3.copyWith(fontSize: 16)),
               Text('${points.length} day${points.length == 1 ? '' : 's'}',
-                  style: AppTypography.caption
+                  style: context.caption
                       .copyWith(color: AppColors.onSurfaceVariant)),
             ],
           ),
@@ -246,7 +246,7 @@ class _ChartCard extends StatelessWidget {
                 ? Center(
                     child: Text(
                       'No revenue data',
-                      style: AppTypography.bodyMd
+                      style: context.bodyMd
                           .copyWith(color: AppColors.onSurfaceVariant),
                     ),
                   )

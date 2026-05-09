@@ -1,22 +1,35 @@
+import 'dart:math' as math;
+
 import 'package:akhiyan_admin/api/akhiyan_api.dart';
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
-import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
-import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
 import 'package:akhiyan_admin/src/core/widgets/date_range_picker_dialog.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:akhiyan_admin/src/features/dashboard/presentation/dashboard_charts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
-/// Dashboard home — bound to live data via [dashboardDataProvider].
-/// Hardcoded numbers were replaced with reactive bindings; while data is
-/// loading the cells fall back to `—`. Pull-to-refresh re-invokes the
-/// provider; errors render as a banner with a retry button.
+const Color _kCardOrange = AppColors.primary;
+const Color _kCardYellow = AppColors.warning;
+const Color _kCardBlue = Color(0xFF3B82F6);
+const Color _kCardRed = AppColors.error;
+const Color _kCardTeal = AppColors.secondary;
+const Color _kCardIndigo = Color(0xFF6366F1);
+const Color _kCardPurple = Color(0xFF8B5CF6);
+const Color _kCardGreen = Color(0xFF10B981);
+
+enum _DashboardMetricTab { totalOrders, actualSalesCourier }
+
+extension _DashboardMetricTabCopy on _DashboardMetricTab {
+  String get label => switch (this) {
+    _DashboardMetricTab.totalOrders => 'Total Orders',
+    _DashboardMetricTab.actualSalesCourier => 'Actual Sales & Courier Sent',
+  };
+}
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -25,23 +38,25 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  // Earliest selectable date — kept in sync between the picker (firstDate)
-  // and the pill's preset detection (so "All Time" resolves consistently).
   static final DateTime _firstDate = DateTime(2020);
 
   late DateTimeRange _range;
+  var _selectedMetricTab = _DashboardMetricTab.totalOrders;
 
   @override
   void initState() {
     super.initState();
-    // Default to today; the user can switch to other presets from the pill.
-    // IMPORTANT: emit a real 24h window, not a zero-width range. Sending
-    // `start == end` to /dashboard makes the backend treat the slice as 0
-    // seconds wide, which historically returned 500 instead of empty stats.
+    _range = _defaultRange();
+  }
+
+  static DateTimeRange _defaultRange() {
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day);
-    final end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
-    _range = DateTimeRange(start: start, end: end);
+    final yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: 1));
+    return DateTimeRange(start: yesterday, end: yesterday);
   }
 
   Future<void> _pickRange() async {
@@ -56,27 +71,160 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
+  void _resetRange() {
+    setState(() => _range = _defaultRange());
+  }
+
+  List<_CombinedMetric> _totalOrderCards(DashboardData data) => [
+    _CombinedMetric(
+      countIcon: Icons.inventory_2_outlined,
+      revenueIcon: Icons.attach_money_rounded,
+      countLabel: 'Total Orders',
+      revenueLabel: 'Total Revenue',
+      count: data.stats.totalOrders,
+      revenue: data.stats.totalRevenue,
+      color: _kCardOrange,
+    ),
+    _CombinedMetric(
+      countIcon: Icons.schedule_rounded,
+      revenueIcon: Icons.attach_money_rounded,
+      countLabel: 'Pending Orders',
+      revenueLabel: 'Pending Revenue',
+      count: data.orderCounts.pending,
+      revenue: data.revenueByStatus.pending,
+      color: _kCardYellow,
+    ),
+    _CombinedMetric(
+      countIcon: Icons.check_circle_outline_rounded,
+      revenueIcon: Icons.attach_money_rounded,
+      countLabel: 'Confirmed Orders',
+      revenueLabel: 'Confirmed Revenue',
+      count: data.orderCounts.confirmed,
+      revenue: data.revenueByStatus.confirmed,
+      color: _kCardBlue,
+    ),
+    _CombinedMetric(
+      countIcon: Icons.cancel_outlined,
+      revenueIcon: Icons.attach_money_rounded,
+      countLabel: 'Cancelled Orders',
+      revenueLabel: 'Cancelled Amount (excl. shipping)',
+      count: data.orderCounts.cancelled,
+      revenue: data.stats.cancelledRevenue,
+      color: _kCardRed,
+    ),
+  ];
+
+  List<_CombinedMetric> _actualSalesCourierCards(DashboardData data) => [
+    _CombinedMetric(
+      countIcon: Icons.local_shipping_outlined,
+      revenueIcon: Icons.attach_money_rounded,
+      countLabel: 'Courier Sent Orders',
+      revenueLabel: 'Sales Revenue (excl. shipping)',
+      count: data.stats.shippedOrders,
+      revenue: data.stats.shippedRevenue,
+      color: _kCardTeal,
+    ),
+    _CombinedMetric(
+      countIcon: Icons.today_outlined,
+      revenueIcon: Icons.attach_money_rounded,
+      countLabel: "Today's Courier",
+      revenueLabel: "Today's Sales",
+      count: data.stats.todayShipped,
+      revenue: data.stats.todayShippedRevenue,
+      color: _kCardIndigo,
+    ),
+    _CombinedMetric(
+      countIcon: Icons.people_alt_outlined,
+      revenueIcon: Icons.stacked_line_chart_rounded,
+      countLabel: 'Customers (Shipped)',
+      revenueLabel: 'Avg Order Value',
+      count: data.stats.shippedCustomers,
+      revenue: data.stats.shippedOrders > 0
+          ? data.stats.shippedRevenue / data.stats.shippedOrders
+          : 0,
+      color: _kCardPurple,
+    ),
+    _CombinedMetric(
+      countIcon: Icons.verified_outlined,
+      revenueIcon: Icons.attach_money_rounded,
+      countLabel: 'Delivered Orders',
+      revenueLabel: 'Delivered Revenue',
+      count: data.orderCounts.delivered,
+      revenue: data.revenueByStatus.delivered,
+      color: _kCardGreen,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final ref = this.ref;
-    final session = ref.watch(authControllerProvider);
-    final firstName = session?.name.split(' ').first ?? 'there';
-
     final asyncData = ref.watch(dashboardDataProvider(_range));
     final data = asyncData.value;
-    final isLoading = asyncData.isLoading;
-    final errorMessage = asyncData.hasError ? _describeError(asyncData.error) : null;
+    final isInitialLoading = asyncData.isLoading && data == null;
+    final isRefreshing = asyncData.isLoading && data != null;
+    final errorMessage = asyncData.hasError
+        ? _describeError(asyncData.error)
+        : null;
+    final visibleCards = data == null
+        ? const <_CombinedMetric>[]
+        : switch (_selectedMetricTab) {
+            _DashboardMetricTab.totalOrders => _totalOrderCards(data),
+            _DashboardMetricTab.actualSalesCourier => _actualSalesCourierCards(
+              data,
+            ),
+          };
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppShellAppBar(),
-      // FAB lives on the shell now (centered + button in the bottom nav).
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 1,
+        leading: IconButton(
+          onPressed: () => appShellScaffoldKey.currentState?.openDrawer(),
+          icon: const Icon(Icons.menu_rounded, color: AppColors.outline),
+        ),
+        titleSpacing: 0,
+        title: Text(
+          'Dashboard',
+          style: context.h3.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.onBackground,
+          ),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Home',
+            onPressed: () => context.go('/dashboard'),
+            icon: const Icon(
+              Icons.home_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () async {
+              await ref.read(authControllerProvider.notifier).signOut();
+              if (!context.mounted) return;
+              context.go('/login');
+            },
+            icon: const Icon(
+              Icons.logout_rounded,
+              color: AppColors.error,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: RefreshIndicator(
+        color: AppColors.primary,
         onRefresh: () async {
           ref.invalidate(dashboardDataProvider(_range));
           await ref.read(dashboardDataProvider(_range).future);
         },
-        color: AppColors.primary,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.md,
@@ -85,63 +233,58 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             96,
           ),
           children: [
-            // Pill MUST stay top-right of the greeting at every width — do
-            // not switch this back to a Wrap or stack vertically on narrow
-            // screens. The greeting uses Expanded so its long text and date
-            // line wrap inside the available space, and the pill keeps its
-            // natural width on the right.
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _Greeting(name: firstName)),
-                const SizedBox(width: AppSpacing.sm),
-                _DateRangePill(
-                  range: _range,
-                  firstDate: _firstDate,
-                  onTap: _pickRange,
-                ),
-              ],
+            _DashboardFilterCard(
+              range: _range,
+              firstDate: _firstDate,
+              busy: isRefreshing || isInitialLoading,
+              onTap: _pickRange,
+              onReset: _resetRange,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            // Error state — only shows on outright failure.
-            if (errorMessage != null) ...[
-              _ErrorBanner(
+            const SizedBox(height: AppSpacing.md),
+            _DashboardMetricTabs(
+              selected: _selectedMetricTab,
+              onChanged: (tab) => setState(() => _selectedMetricTab = tab),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (isInitialLoading) const _DashboardSkeleton(),
+            if (!isInitialLoading && data == null && errorMessage != null)
+              _DashboardErrorCard(
                 message: errorMessage,
                 onRetry: () => ref.invalidate(dashboardDataProvider(_range)),
               ),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-            // Conditional fraud banner — only when count > 0.
-            if ((data?.flaggedOrdersCount ?? 0) > 0) ...[
-              _FraudBanner(count: data!.flaggedOrdersCount),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-            _StatsGrid(cards: data?.cards),
-            const SizedBox(height: AppSpacing.s12),
-            // Quick at-a-glance status counts (e.g. "5 pending · 12
-            // confirmed · 3 returned") sourced from the same analytics
-            // payload that feeds the donut. Hidden when every status is
-            // zero so an empty 7d window doesn't show an empty strip.
-            const _StatusCountStrip(),
-            const SizedBox(height: 16),
-            // Analytics charts — sourced from /m/analytics?period=7d. Lives
-            // in its own provider so a date-range change on the stats
-            // section above doesn't drag the "Last 7 Days" chart with it.
-            _DashboardCharts(),
-            const SizedBox(height: 16),
-            _SectionHeader(
-              title: 'Recent Orders',
-              trailing: TextButton(
-                onPressed: () => context.go('/orders'),
-                child: const Text('View All'),
+            if (!isInitialLoading && data != null) ...[
+              if (errorMessage != null) ...[
+                _DashboardErrorCard(
+                  message: errorMessage,
+                  onRetry: () => ref.invalidate(dashboardDataProvider(_range)),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: _CombinedStatsGrid(
+                  key: ValueKey(_selectedMetricTab),
+                  cards: visibleCards,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _RecentOrdersCard(orders: data?.recentOrders, isLoading: isLoading),
-            const SizedBox(height: 16),
-            const _SectionHeader(title: 'Top Products'),
-            const SizedBox(height: AppSpacing.md),
-            _TopProducts(products: data?.topProducts, isLoading: isLoading),
+              const SizedBox(height: AppSpacing.lg),
+              _OrdersChartCard(points: data.dailyOrders),
+              const SizedBox(height: AppSpacing.md),
+              _StatusDonutCard(orderCounts: data.orderCounts),
+              const SizedBox(height: AppSpacing.md),
+              _TableSection(
+                title: 'Recent Orders',
+                child: _RecentOrdersTable(orders: data.recentOrders),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _TableSection(
+                title: 'Top Selling Products',
+                child: _TopProductsTable(products: data.topProducts),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (data.lowStock.isNotEmpty)
+                _LowStockAlertCard(items: data.lowStock),
+            ],
           ],
         ),
       ),
@@ -149,73 +292,659 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-// ─── Status count strip ───────────────────────────────────────────────────
+class _DashboardMetricTabs extends StatelessWidget {
+  const _DashboardMetricTabs({required this.selected, required this.onChanged});
 
-/// Horizontal scroll of compact status tiles (e.g. "5 Pending", "12
-/// Confirmed"). Pulls from the same `dashboardAnalyticsProvider` as the
-/// donut so colours and counts always agree across the two surfaces.
-///
-/// While the analytics fetch is in flight the strip collapses to a 0-height
-/// SizedBox — there's no value in showing skeleton chips above the donut
-/// which is already showing its own skeleton.
-class _StatusCountStrip extends ConsumerWidget {
-  const _StatusCountStrip();
-
-  // Same palette as StatusDonutCard so the dot under each tile matches the
-  // ring slice on the donut below.
-  static const _statusColors = <String, Color>{
-    'delivered': AppColors.success,
-    'confirmed': AppColors.success,
-    'courier_sent': AppColors.secondary,
-    'processing': AppColors.info,
-    'pending': AppColors.warning,
-    'on_hold': AppColors.outline,
-    'cancelled': AppColors.error,
-    'returned': AppColors.tertiary,
-    'trashed': AppColors.outline,
-  };
-
-  static const _statusLabels = <String, String>{
-    'delivered': 'Delivered',
-    'confirmed': 'Confirmed',
-    'courier_sent': 'Courier Sent',
-    'processing': 'Processing',
-    'pending': 'Pending',
-    'on_hold': 'On Hold',
-    'cancelled': 'Cancelled',
-    'returned': 'Returned',
-    'trashed': 'Trashed',
-  };
+  final _DashboardMetricTab selected;
+  final ValueChanged<_DashboardMetricTab> onChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(dashboardAnalyticsProvider);
-    final breakdown = async.value?.statusBreakdown ?? const <String, int>{};
-    final entries = breakdown.entries.where((e) => e.value > 0).toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    if (entries.isEmpty) return const SizedBox.shrink();
-
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: entries.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-        itemBuilder: (_, i) {
-          final e = entries[i];
-          return _StatusCountTile(
-            color: _statusColors[e.key] ?? AppColors.outline,
-            label: _statusLabels[e.key] ?? e.key,
-            count: e.value,
-          );
-        },
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        border: Border.all(color: AppColors.outlineVariant),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _DashboardMetricTabButton(
+              label: _DashboardMetricTab.totalOrders.label,
+              selected: selected == _DashboardMetricTab.totalOrders,
+              onTap: () => onChanged(_DashboardMetricTab.totalOrders),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _DashboardMetricTabButton(
+              label: _DashboardMetricTab.actualSalesCourier.label,
+              selected: selected == _DashboardMetricTab.actualSalesCourier,
+              onTap: () => onChanged(_DashboardMetricTab.actualSalesCourier),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _StatusCountTile extends StatelessWidget {
-  const _StatusCountTile({
+class _DashboardMetricTabButton extends StatelessWidget {
+  const _DashboardMetricTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s12,
+            vertical: AppSpacing.s12,
+          ),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadius.large),
+            border: Border.all(
+              color: selected ? AppColors.primary : Colors.transparent,
+            ),
+          ),
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: context.bodySm.copyWith(
+              fontWeight: FontWeight.w800,
+              color: selected ? Colors.white : AppColors.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardFilterCard extends StatelessWidget {
+  const _DashboardFilterCard({
+    required this.range,
+    required this.firstDate,
+    required this.busy,
+    required this.onTap,
+    required this.onReset,
+  });
+
+  final DateTimeRange range;
+  final DateTime firstDate;
+  final bool busy;
+  final VoidCallback onTap;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = dateRangePresetLabel(range, firstDate: firstDate);
+    return _SurfaceCard(
+      borderColor: AppColors.outlineVariant,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.filter_alt_outlined,
+                size: 16,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Filter by Date',
+                style: context.bodySm.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onBackground,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundAlt,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: AppColors.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onTap,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s12,
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                label,
+                                style: context.bodySm.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryDarker,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.s12),
+                  child: busy
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: onReset,
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
+                              border: Border.all(
+                                color: AppColors.outlineVariant,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 12,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CombinedMetric {
+  const _CombinedMetric({
+    required this.countIcon,
+    required this.revenueIcon,
+    required this.countLabel,
+    required this.revenueLabel,
+    required this.count,
+    required this.revenue,
+    required this.color,
+  });
+
+  final IconData countIcon;
+  final IconData revenueIcon;
+  final String countLabel;
+  final String revenueLabel;
+  final int count;
+  final double revenue;
+  final Color color;
+}
+
+class _CombinedStatsGrid extends StatelessWidget {
+  const _CombinedStatsGrid({required this.cards, super.key});
+
+  final List<_CombinedMetric> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < cards.length; i += 2) ...[
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _CombinedMetricCard(metric: cards[i])),
+                if (i + 1 < cards.length) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _CombinedMetricCard(metric: cards[i + 1])),
+                ] else
+                  const Expanded(child: SizedBox.shrink()),
+              ],
+            ),
+          ),
+          if (i + 2 < cards.length) const SizedBox(height: AppSpacing.sm),
+        ],
+      ],
+    );
+  }
+}
+
+class _CombinedMetricCard extends StatelessWidget {
+  const _CombinedMetricCard({required this.metric});
+
+  final _CombinedMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SurfaceCard(
+      borderColor: metric.color.withValues(alpha: 0.35),
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _MetricRow(
+            icon: metric.countIcon,
+            label: metric.countLabel,
+            value: _formatCount(metric.count),
+            color: metric.color,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Divider(
+              height: 1,
+              color: AppColors.outlineVariant.withValues(alpha: 0.7),
+            ),
+          ),
+          _MetricRow(
+            icon: metric.revenueIcon,
+            label: metric.revenueLabel,
+            value: _formatCurrency(metric.revenue),
+            color: metric.color.withValues(alpha: 0.88),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  const _MetricRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(AppRadius.medium),
+            ),
+            child: Icon(icon, size: 18, color: Colors.white),
+          ),
+          const SizedBox(width: AppSpacing.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: AppTypography.dataDisplay.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.onBackground,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: context.caption.copyWith(
+                    fontSize: 11,
+                    color: AppColors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdersChartCard extends StatelessWidget {
+  const _OrdersChartCard({required this.points});
+
+  final List<DailyOrderPoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SurfaceCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Last 7 Days Orders',
+            style: context.h3.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.onBackground,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: 220,
+            child: points.isEmpty
+                ? const _EmptyStateText(
+                    message: 'No order data for the last 7 days.',
+                  )
+                : CustomPaint(
+                    size: Size.infinite,
+                    painter: _OrdersBarChartPainter(points: points),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrdersBarChartPainter extends CustomPainter {
+  _OrdersBarChartPainter({required this.points});
+
+  final List<DailyOrderPoint> points;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+
+    const topGutter = 10.0;
+    const leftGutter = 18.0;
+    const bottomGutter = 28.0;
+    final chartRect = Rect.fromLTWH(
+      leftGutter,
+      topGutter,
+      size.width - leftGutter,
+      size.height - topGutter - bottomGutter,
+    );
+
+    final maxCount = points.fold<int>(
+      0,
+      (max, point) => point.count > max ? point.count : max,
+    );
+    final scale = math.max(1, maxCount).toDouble();
+    final slotWidth = chartRect.width / points.length;
+    const barRatio = 0.56;
+
+    final barPaint = Paint()..color = AppColors.primary;
+    final gridPaint = Paint()
+      ..color = AppColors.borderSubtle
+      ..strokeWidth = 1;
+    final axisStyle = AppTypography.caption.copyWith(
+      fontSize: 10,
+      color: AppColors.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    );
+    final valueStyle = AppTypography.caption.copyWith(
+      fontSize: 10,
+      color: AppColors.onBackground,
+      fontWeight: FontWeight.w800,
+    );
+
+    for (var tick = 0; tick <= 4; tick++) {
+      final pct = tick / 4;
+      final y = chartRect.bottom - chartRect.height * pct;
+      canvas.drawLine(
+        Offset(chartRect.left, y),
+        Offset(chartRect.right, y),
+        gridPaint,
+      );
+
+      final label = (scale * pct).round().toString();
+      final textPainter = TextPainter(
+        text: TextSpan(text: label, style: axisStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(canvas, Offset(0, y - textPainter.height / 2));
+    }
+
+    for (var i = 0; i < points.length; i++) {
+      final point = points[i];
+      final barHeight = chartRect.height * (point.count / scale);
+      final left =
+          chartRect.left + (slotWidth * i) + slotWidth * (1 - barRatio) / 2;
+      final width = slotWidth * barRatio;
+      final top = chartRect.bottom - barHeight;
+
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(left, top, width, barHeight < 3 ? 3 : barHeight),
+        const Radius.circular(6),
+      );
+      canvas.drawRRect(rect, barPaint);
+
+      if (point.count > 0) {
+        final countPainter = TextPainter(
+          text: TextSpan(text: '${point.count}', style: valueStyle),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        countPainter.paint(
+          canvas,
+          Offset(left + width / 2 - countPainter.width / 2, top - 16),
+        );
+      }
+
+      final labelPainter = TextPainter(
+        text: TextSpan(text: point.date, style: axisStyle),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: slotWidth);
+      labelPainter.paint(
+        canvas,
+        Offset(left + width / 2 - labelPainter.width / 2, chartRect.bottom + 8),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _OrdersBarChartPainter oldDelegate) =>
+      oldDelegate.points != points;
+}
+
+class _StatusDonutCard extends StatelessWidget {
+  const _StatusDonutCard({required this.orderCounts});
+
+  final DashboardOrderCounts orderCounts;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <MapEntry<String, int>>[
+      MapEntry('Pending', orderCounts.pending),
+      MapEntry('Confirmed', orderCounts.confirmed),
+      MapEntry('Processing', orderCounts.processing),
+      MapEntry('Courier Sent', orderCounts.shipped),
+      MapEntry('Delivered', orderCounts.delivered),
+      MapEntry('Cancelled', orderCounts.cancelled),
+    ].where((entry) => entry.value > 0).toList();
+
+    final colors = <Color>[
+      _kCardYellow,
+      _kCardBlue,
+      _kCardIndigo,
+      _kCardPurple,
+      _kCardGreen,
+      _kCardRed,
+    ];
+
+    final total = entries.fold<int>(0, (sum, entry) => sum + entry.value);
+
+    return _SurfaceCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Order Status Breakdown',
+            style: context.h3.copyWith(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.onBackground,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (entries.isEmpty)
+            const SizedBox(
+              height: 220,
+              child: _EmptyStateText(
+                message: 'No orders in the selected window.',
+              ),
+            )
+          else ...[
+            SizedBox(
+              height: 190,
+              child: Center(
+                child: SizedBox(
+                  width: 170,
+                  height: 170,
+                  child: CustomPaint(
+                    painter: _StatusDonutPainter(
+                      values: entries.map((entry) => entry.value).toList(),
+                      colors: colors.take(entries.length).toList(),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$total',
+                            style: AppTypography.dataDisplay.copyWith(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.onBackground,
+                            ),
+                          ),
+                          Text(
+                            'orders',
+                            style: context.caption.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (var i = 0; i < entries.length; i++)
+                  _StatusLegendChip(
+                    color: colors[i],
+                    label: entries[i].key,
+                    count: entries[i].value,
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusDonutPainter extends CustomPainter {
+  _StatusDonutPainter({required this.values, required this.colors});
+
+  final List<int> values;
+  final List<Color> colors;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty) return;
+
+    final total = values.fold<int>(0, (sum, value) => sum + value);
+    if (total <= 0) return;
+
+    final strokeWidth = size.width * 0.18;
+    final rect = Offset.zero & size;
+    final arcRect = Rect.fromLTWH(
+      strokeWidth / 2,
+      strokeWidth / 2,
+      rect.width - strokeWidth,
+      rect.height - strokeWidth,
+    );
+
+    final trackPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = strokeWidth
+      ..color = AppColors.borderSubtle;
+    canvas.drawArc(arcRect, 0, math.pi * 2, false, trackPaint);
+
+    var startAngle = -math.pi / 2;
+    final slicePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.butt
+      ..strokeWidth = strokeWidth;
+
+    for (var i = 0; i < values.length; i++) {
+      final sweep = (values[i] / total) * math.pi * 2;
+      slicePaint.color = colors[i];
+      canvas.drawArc(arcRect, startAngle, sweep, false, slicePaint);
+      startAngle += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _StatusDonutPainter oldDelegate) =>
+      oldDelegate.values != values || oldDelegate.colors != colors;
+}
+
+class _StatusLegendChip extends StatelessWidget {
+  const _StatusLegendChip({
     required this.color,
     required this.label,
     required this.count,
@@ -235,7 +964,7 @@ class _StatusCountTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.slateBorder),
+        border: Border.all(color: AppColors.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -247,20 +976,229 @@ class _StatusCountTile extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            '$count',
-            style: AppTypography.bodySm.copyWith(
-              fontSize: 12,
+            '$label • $count',
+            style: context.caption.copyWith(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.onBackground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TableSection extends StatelessWidget {
+  const _TableSection({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SurfaceCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: context.h3.copyWith(
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               color: AppColors.onBackground,
             ),
           ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AppTypography.bodySm.copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.outline,
+          const SizedBox(height: AppSpacing.md),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentOrdersTable extends StatelessWidget {
+  const _RecentOrdersTable({required this.orders});
+
+  final List<OrderListItem> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    if (orders.isEmpty) {
+      return const _EmptyStateText(message: 'No recent orders found.');
+    }
+
+    final displayed = orders.take(8).toList();
+    return Column(
+      children: [
+        const _TableHeaderRow(
+          cells: ['#', 'Customer', 'Total', 'Status'],
+          flex: [1, 3, 2, 2],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (var i = 0; i < displayed.length; i++) ...[
+          _RecentOrderRow(item: displayed[i]),
+          if (i < displayed.length - 1)
+            const Divider(height: AppSpacing.md, color: AppColors.borderSubtle),
+        ],
+      ],
+    );
+  }
+}
+
+class _RecentOrderRow extends StatelessWidget {
+  const _RecentOrderRow({required this.item});
+
+  final OrderListItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusMeta = _statusMeta(item.status);
+    return InkWell(
+      onTap: () => context.push('/orders/${item.id}'),
+      borderRadius: BorderRadius.circular(AppRadius.medium),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '#${item.id}',
+                style: context.caption.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                item.customerName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.bodySm.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onBackground,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                _formatCurrency(item.total),
+                textAlign: TextAlign.right,
+                style: AppTypography.dataDisplay.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusMeta.background,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    statusMeta.label,
+                    style: context.caption.copyWith(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: statusMeta.foreground,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TopProductsTable extends StatelessWidget {
+  const _TopProductsTable({required this.products});
+
+  final List<TopProductSummary> products;
+
+  @override
+  Widget build(BuildContext context) {
+    if (products.isEmpty) {
+      return const _EmptyStateText(message: 'No top-selling products yet.');
+    }
+
+    final displayed = products.take(8).toList();
+    return Column(
+      children: [
+        const _TableHeaderRow(
+          cells: ['Products', 'Sales', 'Total'],
+          flex: [4, 1, 2],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (var i = 0; i < displayed.length; i++) ...[
+          _TopProductRow(item: displayed[i]),
+          if (i < displayed.length - 1)
+            const Divider(height: AppSpacing.md, color: AppColors.borderSubtle),
+        ],
+      ],
+    );
+  }
+}
+
+class _TopProductRow extends StatelessWidget {
+  const _TopProductRow({required this.item});
+
+  final TopProductSummary item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              item.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.bodySm.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.onBackground,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              '${item.soldCount}',
+              textAlign: TextAlign.center,
+              style: context.caption.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              _formatCurrency(item.estimatedRevenue),
+              textAlign: TextAlign.right,
+              style: AppTypography.dataDisplay.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],
@@ -269,666 +1207,398 @@ class _StatusCountTile extends StatelessWidget {
   }
 }
 
-// ─── Charts (Last 7 Days bar + Status donut) ──────────────────────────────
+class _LowStockAlertCard extends StatelessWidget {
+  const _LowStockAlertCard({required this.items});
 
-/// Reads `dashboardAnalyticsProvider` (period=7d) and renders the bar +
-/// donut cards from [dashboard_charts.dart]. Falls back to a skeleton
-/// while loading and an error banner on failure — never blanks out the
-/// surrounding dashboard.
-class _DashboardCharts extends ConsumerWidget {
+  final List<DashboardLowStockItem> items;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(dashboardAnalyticsProvider);
-    return async.when(
-      loading: () => const DashboardChartsSkeleton(),
-      error: (e, _) => _ErrorBanner(
-        message: _describeError(e),
-        onRetry: () => ref.invalidate(dashboardAnalyticsProvider),
-      ),
-      data: (a) => Column(
+  Widget build(BuildContext context) {
+    return _SurfaceCard(
+      borderColor: AppColors.errorContainer,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          OrdersBarChartCard(points: a.revenueChart),
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.error,
+                size: 18,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Low Stock Alert',
+                style: context.h3.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.md),
-          StatusDonutCard(statusBreakdown: a.statusBreakdown),
+          Column(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                _LowStockRow(item: items[i]),
+                if (i < items.length - 1) const SizedBox(height: AppSpacing.sm),
+              ],
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-// ─── Date range pill ──────────────────────────────────────────────────────
+class _LowStockRow extends StatelessWidget {
+  const _LowStockRow({required this.item});
 
-/// Compact pill that shows the matching preset name (or "Custom") for the
-/// active [range]. Width auto-fits the label so it sits to the left under
-/// the greeting like Stripe / Shopify admin filters.
-class _DateRangePill extends StatelessWidget {
-  const _DateRangePill({
-    required this.range,
-    required this.firstDate,
-    required this.onTap,
-  });
-
-  final DateTimeRange range;
-  final DateTime firstDate;
-  final VoidCallback onTap;
+  final DashboardLowStockItem item;
 
   @override
   Widget build(BuildContext context) {
-    final label = dateRangePresetLabel(range, firstDate: firstDate);
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Material(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: 8,
-            ),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s12),
+      decoration: BoxDecoration(
+        color: AppColors.errorContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.large),
+        border: Border.all(color: AppColors.errorContainer),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.outlineVariant),
-              borderRadius: BorderRadius.circular(AppRadius.pill),
+              color: AppColors.errorContainer,
+              borderRadius: BorderRadius.circular(AppRadius.medium),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              color: AppColors.error,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 16, color: AppColors.primary),
-                const SizedBox(width: AppSpacing.sm),
                 Text(
-                  label,
-                  style: AppTypography.bodySm.copyWith(
+                  item.name,
+                  style: context.bodySm.copyWith(
+                    fontWeight: FontWeight.w800,
                     color: AppColors.onBackground,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Icon(Icons.expand_more,
-                    size: 18, color: AppColors.onSurfaceVariant),
+                const SizedBox(height: 4),
+                if (item.hasVariants)
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: [
+                      for (final variant in item.variants)
+                        _LowStockVariantChip(variant: variant),
+                    ],
+                  )
+                else
+                  Text(
+                    'Stock: ${item.stock}',
+                    style: context.caption.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.error,
+                    ),
+                  ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LowStockVariantChip extends StatelessWidget {
+  const _LowStockVariantChip({required this.variant});
+
+  final DashboardLowStockVariant variant;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.errorContainer,
+        borderRadius: BorderRadius.circular(AppRadius.small),
+      ),
+      child: Text(
+        '${variant.label}: ${variant.stock}',
+        style: context.caption.copyWith(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          color: AppColors.onErrorContainer,
         ),
       ),
     );
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
+class _TableHeaderRow extends StatelessWidget {
+  const _TableHeaderRow({required this.cells, required this.flex});
 
-String _describeError(Object? e) {
-  if (e is ApiException) return e.message;
-  if (e is NetworkException) return 'No internet connection';
-  return 'Could not load dashboard';
-}
-
-String _formatDelta(int? pct) {
-  if (pct == null) return '';
-  return '${pct >= 0 ? '+' : ''}$pct%';
-}
-
-String _formatCompact(num? n) {
-  if (n == null) return '—';
-  if (n >= 1000000) return '৳${(n / 1000000).toStringAsFixed(1)}M';
-  if (n >= 1000) return '৳${(n / 1000).toStringAsFixed(1)}k';
-  return '৳${n.toStringAsFixed(0)}';
-}
-
-String _formatCount(num? n) {
-  if (n == null) return '—';
-  if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-  return n.toStringAsFixed(0);
-}
-
-String _formatTaka(num n) {
-  final s = n.toStringAsFixed(0);
-  final buf = StringBuffer();
-  for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
-    buf.write(s[i]);
-  }
-  return buf.toString();
-}
-
-String _formatOrderId(String id) {
-  final n = int.tryParse(id);
-  if (n != null) return '#AK-${n.toString().padLeft(4, '0')}';
-  return '#${id.length > 8 ? id.substring(0, 8) : id}';
-}
-
-_OrderStatus _parseStatus(String s) {
-  switch (s.toLowerCase()) {
-    case 'pending':
-      return _OrderStatus.pending;
-    case 'confirmed':
-      return _OrderStatus.confirmed;
-    case 'processing':
-      return _OrderStatus.processing;
-    case 'shipped':
-      return _OrderStatus.shipped;
-    case 'delivered':
-      return _OrderStatus.delivered;
-    case 'cancelled':
-    case 'canceled':
-      return _OrderStatus.cancelled;
-    default:
-      return _OrderStatus.pending;
-  }
-}
-
-// ─── Greeting ─────────────────────────────────────────────────────────────
-
-class _Greeting extends StatelessWidget {
-  const _Greeting({required this.name});
-  final String name;
+  final List<String> cells;
+  final List<int> flex;
 
   @override
   Widget build(BuildContext context) {
-    final today = DateFormat('EEEE, MMM d, yyyy').format(DateTime.now());
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          'Good morning, $name',
-          style: AppTypography.h1.copyWith(
-            fontSize: 22,
-            height: 1.2,
-            color: AppColors.onBackground,
-            fontWeight: FontWeight.w700,
+        for (var i = 0; i < cells.length; i++)
+          Expanded(
+            flex: flex[i],
+            child: Text(
+              cells[i],
+              textAlign: i >= cells.length - 2
+                  ? TextAlign.right
+                  : TextAlign.left,
+              style: context.caption.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
           ),
+      ],
+    );
+  }
+}
+
+class _DashboardSkeleton extends StatelessWidget {
+  const _DashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _SkeletonCombinedGrid(),
+        SizedBox(height: AppSpacing.lg),
+        _SkeletonChartCard(),
+        SizedBox(height: AppSpacing.md),
+        _SkeletonChartCard(),
+        SizedBox(height: AppSpacing.md),
+        _SkeletonTableCard(),
+        SizedBox(height: AppSpacing.md),
+        _SkeletonTableCard(),
+      ],
+    );
+  }
+}
+
+class _SkeletonCombinedGrid extends StatelessWidget {
+  const _SkeletonCombinedGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: _SkeletonCombinedCard()),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(child: _SkeletonCombinedCard()),
+          ],
         ),
-        const SizedBox(height: 2),
-        Text(
-          today,
-          style: AppTypography.bodySm.copyWith(
-            color: AppColors.onSurfaceVariant,
-          ),
+        SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(child: _SkeletonCombinedCard()),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(child: _SkeletonCombinedCard()),
+          ],
         ),
       ],
     );
   }
 }
 
-// ─── Error banner ─────────────────────────────────────────────────────────
+class _SkeletonCombinedCard extends StatelessWidget {
+  const _SkeletonCombinedCard();
 
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message, required this.onRetry});
+  @override
+  Widget build(BuildContext context) {
+    return const _SurfaceCard(
+      borderColor: AppColors.outlineVariant,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _SkeletonMetricRow(),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Divider(height: 1, color: AppColors.borderSubtle),
+          ),
+          _SkeletonMetricRow(),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonMetricRow extends StatelessWidget {
+  const _SkeletonMetricRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          _SkeletonBox(width: 34, height: 34, radius: AppRadius.medium),
+          SizedBox(width: AppSpacing.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SkeletonBox(width: 72, height: 18, radius: AppRadius.small),
+                SizedBox(height: 6),
+                _SkeletonBox(width: 140, height: 10, radius: AppRadius.small),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonChartCard extends StatelessWidget {
+  const _SkeletonChartCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _SurfaceCard(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SkeletonBox(width: 160, height: 16, radius: AppRadius.small),
+          SizedBox(height: AppSpacing.md),
+          _SkeletonBox(
+            width: double.infinity,
+            height: 220,
+            radius: AppRadius.large,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonTableCard extends StatelessWidget {
+  const _SkeletonTableCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _SurfaceCard(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SkeletonBox(width: 150, height: 16, radius: AppRadius.small),
+          SizedBox(height: AppSpacing.md),
+          _SkeletonBox(
+            width: double.infinity,
+            height: 14,
+            radius: AppRadius.small,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          _SkeletonBox(
+            width: double.infinity,
+            height: 14,
+            radius: AppRadius.small,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          _SkeletonBox(
+            width: double.infinity,
+            height: 14,
+            radius: AppRadius.small,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          _SkeletonBox(
+            width: double.infinity,
+            height: 14,
+            radius: AppRadius.small,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({
+    required this.width,
+    required this.height,
+    required this.radius,
+  });
+
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+class _DashboardErrorCard extends StatelessWidget {
+  const _DashboardErrorCard({required this.message, required this.onRetry});
+
   final String message;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.errorContainer,
-      borderRadius: BorderRadius.circular(AppRadius.large),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 14,
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.cloud_off, color: AppColors.error, size: 20),
-            const SizedBox(width: AppSpacing.md - 4),
-            Expanded(
-              child: Text(
-                message,
-                style: AppTypography.bodySm.copyWith(
-                  color: AppColors.onErrorContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: onRetry,
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.onErrorContainer,
-                textStyle: AppTypography.bodySm.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Fraud / suspicious orders banner (conditional) ───────────────────────
-
-class _FraudBanner extends StatelessWidget {
-  const _FraudBanner({required this.count});
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.errorContainer,
-      borderRadius: BorderRadius.circular(AppRadius.large),
-      child: InkWell(
-        onTap: () => context.push('/fraud-security'),
-        borderRadius: BorderRadius.circular(AppRadius.large),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: 14,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: const BoxDecoration(
-                  color: AppColors.error,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.priority_high,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  '$count suspicious order${count == 1 ? '' : 's'} flagged — Review now',
-                  style: AppTypography.bodySm.copyWith(
-                    color: AppColors.onErrorContainer,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.onErrorContainer,
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Stats grid ───────────────────────────────────────────────────────────
-
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.cards});
-  final DashboardCards? cards;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 85,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.zero,
-        itemCount: 4,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (_, index) {
-          return SizedBox(
-            width: 150,
-            child: switch (index) {
-              0 => _DashStat(
-                label: "TODAY'S ORDERS",
-                value: _formatCount(cards?.todayOrders.value),
-                trend: _formatDelta(cards?.todayOrders.deltaPct),
-              ),
-              1 => _DashStat(
-                label: "TODAY'S REVENUE",
-                value: _formatCompact(cards?.todayRevenue.value),
-                trend: _formatDelta(cards?.todayRevenue.deltaPct),
-              ),
-              2 => _DashStat(
-                label: 'PENDING ORDERS',
-                value: cards == null ? '—' : cards!.pendingOrders.value.toStringAsFixed(0),
-                valueColor: AppColors.warning,
-                trailingIcon: Icons.access_time_rounded,
-                trailingColor: AppColors.warning,
-              ),
-              _ => _DashStat(
-                label: 'LOW STOCK',
-                value: cards == null
-                    ? '—'
-                    : cards!.lowStockItems.value.toStringAsFixed(0).padLeft(2, '0'),
-                valueColor: AppColors.error,
-                trailingIcon: Icons.shopping_bag_outlined,
-                trailingColor: AppColors.error,
-              ),
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _DashStat extends StatelessWidget {
-  const _DashStat({
-    required this.label,
-    required this.value,
-    this.trend,
-    this.valueColor,
-    this.trailingIcon,
-    this.trailingColor,
-  });
-
-  final String label;
-  final String value;
-  final String? trend;
-  final Color? valueColor;
-  final IconData? trailingIcon;
-  final Color? trailingColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasTrend = trend != null && trend!.isNotEmpty;
-    return AppCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 4,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.onSurfaceVariant,
-              letterSpacing: 0.8,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Flexible(
-                child: Text(
-                  value,
-                  style: AppTypography.dataDisplayLg.copyWith(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: valueColor ?? AppColors.onBackground,
-                    height: 1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 4),
-              if (hasTrend)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.successContainer,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: Text(
-                    trend!,
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.onSuccessContainer,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 9,
-                    ),
-                  ),
-                ),
-              if (trailingIcon != null)
-                Icon(trailingIcon, size: 14, color: trailingColor),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Section header ───────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.trailing});
-  final String title;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: AppTypography.h3.copyWith(
-            fontSize: 18,
-            color: AppColors.onBackground,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        ?trailing,
-      ],
-    );
-  }
-}
-
-// ─── Recent Orders ────────────────────────────────────────────────────────
-
-class _RecentOrdersCard extends StatelessWidget {
-  const _RecentOrdersCard({required this.orders, required this.isLoading});
-  final List<OrderListItem>? orders;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    if (orders == null && isLoading) {
-      return AppCard(
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          children: List.generate(
-            5,
-            (i) => Column(
-              children: [
-                const _OrderRowSkeleton(),
-                if (i < 4) const Divider(height: 1, color: AppColors.borderSubtle),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    if (orders == null || orders!.isEmpty) {
-      return AppCard(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Center(
-          child: Text(
-            'No recent orders',
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final displayed = orders!.take(5).toList();
-    return AppCard(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (var i = 0; i < displayed.length; i++) ...[
-            _OrderRow(item: displayed[i]),
-            if (i < displayed.length - 1)
-              const Divider(height: 1, color: AppColors.borderSubtle),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-enum _OrderStatus { pending, confirmed, processing, shipped, delivered, cancelled }
-
-class _OrderRow extends StatelessWidget {
-  const _OrderRow({required this.item});
-  final OrderListItem item;
-
-  ({Color bg, Color fg, String label}) _statusMeta(_OrderStatus status) {
-    switch (status) {
-      case _OrderStatus.pending:
-        return (
-          bg: AppColors.warningContainer,
-          fg: AppColors.onWarningContainer,
-          label: 'Pending',
-        );
-      case _OrderStatus.confirmed:
-        return (
-          bg: AppColors.infoContainer,
-          fg: AppColors.onInfoContainer,
-          label: 'Confirmed',
-        );
-      case _OrderStatus.processing:
-        return (
-          bg: AppColors.primaryContainer,
-          fg: AppColors.onPrimaryContainer,
-          label: 'Processing',
-        );
-      case _OrderStatus.shipped:
-        return (
-          bg: AppColors.infoContainer,
-          fg: AppColors.onInfoContainer,
-          label: 'Shipped',
-        );
-      case _OrderStatus.delivered:
-        return (
-          bg: AppColors.successContainer,
-          fg: AppColors.onSuccessContainer,
-          label: 'Delivered',
-        );
-      case _OrderStatus.cancelled:
-        return (
-          bg: AppColors.errorContainer,
-          fg: AppColors.onErrorContainer,
-          label: 'Cancelled',
-        );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final id = _formatOrderId(item.id);
-    final amount = '৳${_formatTaka(item.total)}';
-    final m = _statusMeta(_parseStatus(item.status));
-    return InkWell(
-      onTap: () => context.push('/orders/${item.id}'),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    id,
-                    style: AppTypography.dataDisplay.copyWith(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.onBackground,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.customerName,
-                    style: AppTypography.bodySm.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  amount,
-                  style: AppTypography.dataDisplay.copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onBackground,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: m.bg,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: Text(
-                    m.label,
-                    style: AppTypography.caption.copyWith(
-                      color: m.fg,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrderRowSkeleton extends StatelessWidget {
-  const _OrderRowSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    Widget bar(double w, double h) => Container(
-          width: w,
-          height: h,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        );
-    return Padding(
+    return _SurfaceCard(
+      borderColor: AppColors.errorContainer,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
+          const Icon(Icons.cloud_off, color: AppColors.error),
+          const SizedBox(width: AppSpacing.s12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                bar(80, 12),
-                const SizedBox(height: 6),
-                bar(120, 10),
-              ],
+            child: Text(
+              message,
+              style: context.bodySm.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.onErrorContainer,
+              ),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              bar(60, 12),
-              const SizedBox(height: 6),
-              bar(70, 14),
-            ],
+          TextButton(
+            onPressed: onRetry,
+            child: Text(
+              'Retry',
+              style: context.bodySm.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.error,
+              ),
+            ),
           ),
         ],
       ),
@@ -936,219 +1606,130 @@ class _OrderRowSkeleton extends StatelessWidget {
   }
 }
 
-// ─── Top Products ─────────────────────────────────────────────────────────
-
-class _TopProducts extends StatelessWidget {
-  const _TopProducts({required this.products, required this.isLoading});
-  final List<TopProductSummary>? products;
-  final bool isLoading;
-
-  // Used as fallback gradients when image fails / network unreachable.
-  static const _fallbackGradients = <List<Color>>[
-    [Color(0xFF1F1F1F), Color(0xFFB1262C)],
-    [Color(0xFFD7C3A6), Color(0xFFA68A6F)],
-    [Color(0xFF2D2D2D), Color(0xFF6B6B6B)],
-    [Color(0xFF111827), Color(0xFF374151)],
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    if (products == null && isLoading) {
-      return GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        mainAxisSpacing: AppSpacing.md,
-        crossAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.78,
-        children: List.generate(4, (_) => const _ProductCardSkeleton()),
-      );
-    }
-
-    if (products == null || products!.isEmpty) {
-      return SizedBox(
-        height: 120,
-        child: Center(
-          child: Text(
-            'No products yet',
-            style: AppTypography.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: AppSpacing.md,
-      crossAxisSpacing: AppSpacing.md,
-      // 0.78 keeps the image area dominant while leaving room for two
-      // text rows below — tweaked visually so cards feel uniform without
-      // images being squished on narrow screens.
-      childAspectRatio: 0.78,
-      children: [
-        for (var i = 0; i < products!.length; i++)
-          _ProductCard(
-            name: products![i].name,
-            unitsSold: products![i].soldCount,
-            imageUrl: products![i].image,
-            fallbackGradient:
-                _fallbackGradients[i % _fallbackGradients.length],
-          ),
-      ],
-    );
-  }
-}
-
-class _ProductCard extends StatelessWidget {
-  const _ProductCard({
-    required this.name,
-    required this.unitsSold,
-    required this.imageUrl,
-    required this.fallbackGradient,
+class _SurfaceCard extends StatelessWidget {
+  const _SurfaceCard({
+    required this.child,
+    required this.padding,
+    this.borderColor = AppColors.slateBorder,
   });
-  final String name;
-  final int unitsSold;
-  final String imageUrl;
-  final List<Color> fallbackGradient;
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
-    // Custom container instead of AppCard so we get rounded image
-    // clipping AND a softer drop shadow that matches the rest of the
-    // app's elevated surfaces (Users cards, search bar, etc.).
     return Container(
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xLarge),
-        border: Border.all(color: AppColors.slateBorder),
+        border: Border.all(color: borderColor),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Color(0x0A000000),
             blurRadius: 18,
-            offset: Offset(0, 6),
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              loadingBuilder: (ctx, child, progress) {
-                if (progress == null) return child;
-                return _gradientPlaceholder();
-              },
-              errorBuilder: (_, _, _) => _gradientPlaceholder(),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: AppTypography.bodyMd.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onBackground,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '$unitsSold units sold',
-                  style: AppTypography.bodySm.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: Padding(padding: padding, child: child),
     );
   }
+}
 
-  Widget _gradientPlaceholder() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: fallbackGradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.image_outlined,
-          size: 40,
-          color: Colors.white.withValues(alpha: 0.6),
+class _EmptyStateText extends StatelessWidget {
+  const _EmptyStateText({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: context.bodySm.copyWith(
+          color: AppColors.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 }
 
-class _ProductCardSkeleton extends StatelessWidget {
-  const _ProductCardSkeleton();
+class _StatusVisual {
+  const _StatusVisual({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppRadius.xLarge),
-        border: Border.all(color: AppColors.slateBorder),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 18,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Container(color: AppColors.surfaceContainerHigh),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 100,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  width: 70,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerHigh,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  final String label;
+  final Color background;
+  final Color foreground;
+}
+
+_StatusVisual _statusMeta(String status) {
+  switch (status.toLowerCase()) {
+    case 'confirmed':
+      return const _StatusVisual(
+        label: 'Confirmed',
+        background: Color(0xFFDBEAFE),
+        foreground: Color(0xFF1D4ED8),
+      );
+    case 'processing':
+      return const _StatusVisual(
+        label: 'Processing',
+        background: Color(0xFFE0E7FF),
+        foreground: Color(0xFF4338CA),
+      );
+    case 'shipped':
+      return const _StatusVisual(
+        label: 'Courier Sent',
+        background: Color(0xFFEDE9FE),
+        foreground: Color(0xFF7C3AED),
+      );
+    case 'delivered':
+      return const _StatusVisual(
+        label: 'Delivered',
+        background: Color(0xFFD1FAE5),
+        foreground: Color(0xFF047857),
+      );
+    case 'cancelled':
+    case 'canceled':
+      return const _StatusVisual(
+        label: 'Cancelled',
+        background: Color(0xFFFEE2E2),
+        foreground: Color(0xFFB91C1C),
+      );
+    default:
+      return const _StatusVisual(
+        label: 'Pending',
+        background: Color(0xFFFEF3C7),
+        foreground: Color(0xFFB45309),
+      );
   }
+}
+
+String _describeError(Object? error) {
+  if (error is ApiException) return error.message;
+  if (error is NetworkException) return 'No internet connection';
+  return 'Could not load dashboard';
+}
+
+String _formatCount(num value) {
+  if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}k';
+  return value.toStringAsFixed(0);
+}
+
+String _formatCurrency(num value) => '৳${_formatTaka(value)}';
+
+String _formatTaka(num value) {
+  final s = value.toStringAsFixed(0);
+  final buffer = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buffer.write(',');
+    buffer.write(s[i]);
+  }
+  return buffer.toString();
 }

@@ -63,7 +63,7 @@ class StatCard extends StatelessWidget {
               if (trendLabel != null)
                 Text(
                   trendLabel!,
-                  style: AppTypography.caption.copyWith(
+                  style: context.caption.copyWith(
                     color: AppColors.success,
                     fontWeight: FontWeight.w700,
                   ),
@@ -73,7 +73,7 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 30),
           Text(
             label.toUpperCase(),
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
               color: accentColor ?? AppColors.onSurfaceVariant,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w700,

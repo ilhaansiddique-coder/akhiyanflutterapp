@@ -45,7 +45,7 @@ class CustomerDetailScreen extends StatelessWidget {
                   backgroundColor: AppColors.primaryFixed,
                   child: Text(
                     'R',
-                    style: AppTypography.h1.copyWith(
+                    style: context.h1.copyWith(
                       color: AppColors.primary,
                       fontSize: 36,
                     ),
@@ -53,13 +53,13 @@ class CustomerDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text('Rahat Chowdhury',
-                    style: AppTypography.h2.copyWith(
+                    style: context.h2.copyWith(
                       color: AppColors.onPrimaryContainer,
                       fontSize: 20,
                     )),
                 const SizedBox(height: 4),
                 Text('+880 1711-223344',
-                    style: AppTypography.bodyMd.copyWith(
+                    style: context.bodyMd.copyWith(
                       color: AppColors.onPrimaryContainer,
                     )),
                 const SizedBox(height: AppSpacing.md),
@@ -137,7 +137,7 @@ class _Stat extends StatelessWidget {
               style: AppTypography.dataDisplayLg.copyWith(fontSize: 22)),
           const SizedBox(height: 2),
           Text(label,
-              style: AppTypography.caption.copyWith(
+              style: context.caption.copyWith(
                 color: AppColors.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               )),
@@ -160,7 +160,7 @@ class _AddressCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Address', style: AppTypography.h3.copyWith(fontSize: 16)),
+          Text('Address', style: context.h3.copyWith(fontSize: 16)),
           const SizedBox(height: AppSpacing.sm),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +171,7 @@ class _AddressCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'House 24, Road 7, Block D, Banani, Dhaka-1213, Bangladesh',
-                  style: AppTypography.bodySm
+                  style: context.bodySm
                       .copyWith(color: AppColors.onSurfaceVariant),
                 ),
               ),
@@ -200,7 +200,7 @@ class _RecentOrders extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Recent Orders',
-                    style: AppTypography.h3.copyWith(fontSize: 16)),
+                    style: context.h3.copyWith(fontSize: 16)),
                 TextButton(onPressed: () {}, child: const Text('View All')),
               ],
             ),
@@ -212,14 +212,14 @@ class _RecentOrders extends StatelessWidget {
           ]) ...[
             const Divider(height: 1),
             ListTile(
-              title: Text(entry.$1, style: AppTypography.bodyMd),
+              title: Text(entry.$1, style: context.bodyMd),
               subtitle: Text(entry.$2,
-                  style: AppTypography.bodySm.copyWith(
+                  style: context.bodySm.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   )),
               trailing: Text(entry.$3,
-                  style: AppTypography.caption.copyWith(
+                  style: context.caption.copyWith(
                     color: entry.$3 == 'Pending'
                         ? AppColors.error
                         : AppColors.success,

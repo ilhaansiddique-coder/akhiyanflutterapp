@@ -67,6 +67,12 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     return Scaffold(
       key: appShellScaffoldKey,
+      // Body extends under the BottomAppBar so the bar's circular notch
+      // (around the docked FAB) shows the body through it instead of the
+      // scaffold's default white background. Critical when a modal sheet
+      // dims the screen — without this, the notch cuts a white "hole"
+      // through the dim layer.
+      extendBody: true,
       drawer: const AppDrawer(),
       onDrawerChanged: (open) {
         if (mounted) setState(() => _drawerOpen = open);

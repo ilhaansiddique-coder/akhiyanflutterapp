@@ -32,7 +32,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: Text(
         'Akhiyan Admin',
-        style: AppTypography.h3.copyWith(
+        style: context.h3.copyWith(
           color: AppColors.primary,
           fontSize: 18,
           fontWeight: FontWeight.w800,

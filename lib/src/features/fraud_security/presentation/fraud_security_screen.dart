@@ -49,12 +49,12 @@ class FraudSecurityScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('3 active alerts',
-                          style: AppTypography.bodyMd.copyWith(
+                          style: context.bodyMd.copyWith(
                             color: AppColors.onErrorContainer,
                             fontWeight: FontWeight.w700,
                           )),
                       Text('Suspicious login attempts in the last 24h',
-                          style: AppTypography.bodySm.copyWith(
+                          style: context.bodySm.copyWith(
                             color: AppColors.onErrorContainer,
                           )),
                     ],
@@ -65,7 +65,7 @@ class FraudSecurityScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           Text('Recent Events',
-              style: AppTypography.h3.copyWith(fontSize: 18)),
+              style: context.h3.copyWith(fontSize: 18)),
           const SizedBox(height: AppSpacing.sm),
           for (final e in const [
             (Icons.login, 'Suspicious login from Mumbai, IN', '2 min ago',
@@ -105,11 +105,11 @@ class FraudSecurityScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(e.$2,
-                              style: AppTypography.bodySm.copyWith(
+                              style: context.bodySm.copyWith(
                                 fontWeight: FontWeight.w600,
                               )),
                           Text(e.$3,
-                              style: AppTypography.caption.copyWith(
+                              style: context.caption.copyWith(
                                 color: AppColors.onSurfaceVariant,
                               )),
                         ],

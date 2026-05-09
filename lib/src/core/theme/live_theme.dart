@@ -4,7 +4,6 @@ import 'package:akhiyan_admin/src/core/theme/app_theme.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Decoded payload from `GET /api/v1/m/theme`.
 ///
@@ -74,36 +73,19 @@ class LiveTheme {
 
   Color colorOr(String key, Color fallback) => _parseHex(colors[key], fallback);
 
-  /// Resolve a body/heading font choice into a Flutter [TextTheme]. The
-  /// backend stores font stacks like `var(--font-hind-siliguri), 'Hind
-  /// Siliguri', system-ui, sans-serif` — we extract the human-readable
-  /// family name and pull the matching Google Font. If extraction fails or
-  /// the font isn't on Google Fonts, falls back to the static AppTheme.
-  static String? _extractFamily(String? stack) {
-    if (stack == null || stack.isEmpty) return null;
-    // Walk comma-separated parts looking for the first quoted family.
-    for (final raw in stack.split(',')) {
-      final part = raw.trim();
-      if (part.isEmpty) continue;
-      // Skip CSS variables like `var(--font-hind-siliguri)`.
-      if (part.startsWith('var(')) continue;
-      // Strip surrounding single or double quotes if any.
-      var cleaned = part;
-      if ((cleaned.startsWith("'") && cleaned.endsWith("'")) ||
-          (cleaned.startsWith('"') && cleaned.endsWith('"'))) {
-        cleaned = cleaned.substring(1, cleaned.length - 1);
-      }
-      // Skip generic CSS family fallbacks.
-      if (const {'system-ui', 'sans-serif', 'serif', 'monospace', '-apple-system', 'Segoe UI'}.contains(cleaned)) {
-        continue;
-      }
-      return cleaned;
-    }
-    return null;
-  }
-
   /// Build a [ThemeData] from this payload, layered on top of the static
   /// design defaults so any unknown keys still render correctly.
+  ///
+  /// **Fonts are NOT pulled from the backend.** They're bundled locally in
+  /// `assets/fonts/` (BricolageGrotesque + HindSiliguri + BanglaDigits) and
+  /// declared statically in `AppTypography`. The backend's `fonts.body` /
+  /// `fonts.heading` choice is intentionally ignored to avoid a runtime
+  /// network fetch on every theme bump and to match the web's fixed font
+  /// stack.
+  ///
+  /// Body size scaling (`fonts.size_base`) is still honored — it applies to
+  /// the existing TextTheme via `apply(fontSizeFactor: ...)` without
+  /// changing the family.
   ThemeData toThemeData() {
     final base = AppTheme.light;
 
@@ -128,36 +110,13 @@ class LiveTheme {
       surfaceTint: primary,
     );
 
-    final bodyFamily = _extractFamily(fonts['body'] as String?);
-    final headingFamily = _extractFamily(fonts['heading'] as String?);
     final baseSize = (fonts['size_base'] as num?)?.toDouble() ?? 16.0;
 
-    var textTheme = base.textTheme.apply(
+    final textTheme = base.textTheme.apply(
       bodyColor: textBody,
       displayColor: foreground,
       fontSizeFactor: baseSize / 16.0,
     );
-    if (bodyFamily != null) {
-      try {
-        textTheme = GoogleFonts.getTextTheme(bodyFamily, textTheme);
-      } catch (_) {
-        // Family not on Google Fonts — silent fallback.
-      }
-    }
-    if (headingFamily != null) {
-      try {
-        final headingTextStyle = GoogleFonts.getFont(headingFamily);
-        textTheme = textTheme.copyWith(
-          displayLarge: textTheme.displayLarge?.merge(headingTextStyle),
-          displayMedium: textTheme.displayMedium?.merge(headingTextStyle),
-          displaySmall: textTheme.displaySmall?.merge(headingTextStyle),
-          headlineLarge: textTheme.headlineLarge?.merge(headingTextStyle),
-          headlineMedium: textTheme.headlineMedium?.merge(headingTextStyle),
-          headlineSmall: textTheme.headlineSmall?.merge(headingTextStyle),
-          titleLarge: textTheme.titleLarge?.merge(headingTextStyle),
-        );
-      } catch (_) {/* fallback to body family */}
-    }
 
     return base.copyWith(
       colorScheme: colorScheme,

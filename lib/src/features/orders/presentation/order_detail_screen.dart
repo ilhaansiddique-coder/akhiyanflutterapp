@@ -36,11 +36,11 @@ class OrderDetailScreen extends ConsumerWidget {
         title: asyncOrder.when(
           loading: () => Text(
             'Order #$orderId',
-            style: AppTypography.h3.copyWith(fontSize: 18),
+            style: context.h3.copyWith(fontSize: 18),
           ),
           error: (_, _) => Text(
             'Order #$orderId',
-            style: AppTypography.h3.copyWith(fontSize: 18),
+            style: context.h3.copyWith(fontSize: 18),
           ),
           data: (o) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +48,7 @@ class OrderDetailScreen extends ConsumerWidget {
             children: [
               Text(
                 'Order #${_shortId(o.id)}',
-                style: AppTypography.h3.copyWith(fontSize: 18),
+                style: context.h3.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 2),
               OrderStatusBadge(status: _mapStatus(o.status)),
@@ -198,7 +198,7 @@ class _CustomerCard extends StatelessWidget {
             children: [
               Text(
                 'Customer Info',
-                style: AppTypography.h3.copyWith(fontSize: 16),
+                style: context.h3.copyWith(fontSize: 16),
               ),
               const Icon(
                 Icons.person_outlined,
@@ -209,7 +209,7 @@ class _CustomerCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             order.customerName.isEmpty ? '—' : order.customerName,
-            style: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.w600),
+            style: context.bodyMd.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 2),
           Row(
@@ -222,7 +222,7 @@ class _CustomerCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 order.customerPhone,
-                style: AppTypography.bodySm.copyWith(color: AppColors.primary),
+                style: context.bodySm.copyWith(color: AppColors.primary),
               ),
             ],
           ),
@@ -239,7 +239,7 @@ class _CustomerCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     order.customerEmail!,
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                   ),
@@ -266,7 +266,7 @@ class _CustomerCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     _fullAddress,
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                   ),
@@ -300,7 +300,7 @@ class _ItemsCard extends StatelessWidget {
               children: [
                 Text(
                   'Order Items',
-                  style: AppTypography.h3.copyWith(fontSize: 16),
+                  style: context.h3.copyWith(fontSize: 16),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -313,7 +313,7 @@ class _ItemsCard extends StatelessWidget {
                   ),
                   child: Text(
                     '${order.items.length} Items',
-                    style: AppTypography.caption.copyWith(
+                    style: context.caption.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -328,7 +328,7 @@ class _ItemsCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   'No items in this order',
-                  style: AppTypography.bodySm.copyWith(
+                  style: context.bodySm.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
                 ),
@@ -366,7 +366,7 @@ class _ItemsCard extends StatelessWidget {
                   children: [
                     Text(
                       'Total',
-                      style: AppTypography.h3.copyWith(fontSize: 18),
+                      style: context.h3.copyWith(fontSize: 18),
                     ),
                     Text(
                       '৳${order.total.toStringAsFixed(0)}',
@@ -438,14 +438,14 @@ class _LineItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.productName,
-                        style: AppTypography.bodyMd.copyWith(
+                        style: context.bodyMd.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                     Text(
                       '৳${item.price.toStringAsFixed(0)}',
-                      style: AppTypography.bodyMd.copyWith(
+                      style: context.bodyMd.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -454,14 +454,14 @@ class _LineItem extends StatelessWidget {
                 if ((item.variantLabel ?? '').isNotEmpty)
                   Text(
                     item.variantLabel!,
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 const SizedBox(height: 2),
                 Text(
                   'Qty: ${item.quantity}',
-                  style: AppTypography.bodySm.copyWith(
+                  style: context.bodySm.copyWith(
                     color: AppColors.onSurfaceVariant,
                   ),
                 ),
@@ -542,7 +542,7 @@ class _PaymentCardState extends ConsumerState<_PaymentCard> {
               children: [
                 Text(
                   _paymentLabel(widget.order.paymentMethod),
-                  style: AppTypography.bodyMd.copyWith(
+                  style: context.bodyMd.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -560,7 +560,7 @@ class _PaymentCardState extends ConsumerState<_PaymentCard> {
                     const SizedBox(width: 6),
                     Text(
                       paid ? 'Paid' : 'Unpaid',
-                      style: AppTypography.bodySm.copyWith(
+                      style: context.bodySm.copyWith(
                         color: paid ? AppColors.success : AppColors.error,
                         fontWeight: FontWeight.w600,
                       ),
@@ -570,7 +570,7 @@ class _PaymentCardState extends ConsumerState<_PaymentCard> {
                       Flexible(
                         child: Text(
                           'TXN ${widget.order.transactionId!}',
-                          style: AppTypography.caption.copyWith(
+                          style: context.caption.copyWith(
                             color: AppColors.onSurfaceVariant,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -702,12 +702,12 @@ class _CourierCardState extends ConsumerState<_CourierCard> {
                   children: [
                     Text(
                       _courierLabel,
-                      style: AppTypography.h3.copyWith(fontSize: 16),
+                      style: context.h3.copyWith(fontSize: 16),
                     ),
                     if (consignment.isNotEmpty)
                       Text(
                         'Consignment: $consignment',
-                        style: AppTypography.bodySm.copyWith(
+                        style: context.bodySm.copyWith(
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
@@ -730,7 +730,7 @@ class _CourierCardState extends ConsumerState<_CourierCard> {
                   sent
                       ? (status.isEmpty ? 'Dispatched' : status)
                       : 'Pending Dispatch',
-                  style: AppTypography.caption.copyWith(
+                  style: context.caption.copyWith(
                     color: sent
                         ? AppColors.onSuccessContainer
                         : AppColors.onSurfaceVariant,
@@ -826,7 +826,7 @@ class _TimelineCard extends StatelessWidget {
         children: [
           Text(
             'Order History',
-            style: AppTypography.h3.copyWith(fontSize: 16),
+            style: context.h3.copyWith(fontSize: 16),
           ),
           const SizedBox(height: AppSpacing.sm),
           for (var i = 0; i < events.length; i++)
@@ -890,7 +890,7 @@ class _TimelineRow extends StatelessWidget {
                 children: [
                   Text(
                     event.label,
-                    style: AppTypography.bodyMd.copyWith(
+                    style: context.bodyMd.copyWith(
                       fontWeight: FontWeight.w600,
                       color: event.completed
                           ? AppColors.onSurface
@@ -899,7 +899,7 @@ class _TimelineRow extends StatelessWidget {
                   ),
                   Text(
                     event.timestamp,
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
                   ),
@@ -1020,7 +1020,7 @@ class _DangerZoneState extends ConsumerState<_DangerZone> {
           ),
           child: Text(
             'DANGER ZONE',
-            style: AppTypography.caption.copyWith(
+            style: context.caption.copyWith(
               color: AppColors.outline,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.4,

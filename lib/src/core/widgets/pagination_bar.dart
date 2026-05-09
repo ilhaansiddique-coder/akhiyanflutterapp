@@ -175,7 +175,7 @@ class _PageButton extends StatelessWidget {
                   )
                 : Text(
                     '$page',
-                    style: AppTypography.bodySm.copyWith(
+                    style: context.bodySm.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       color: fg,
@@ -199,7 +199,7 @@ class _Ellipsis extends StatelessWidget {
       child: Center(
         child: Text(
           '…',
-          style: AppTypography.bodySm.copyWith(
+          style: context.bodySm.copyWith(
             color: AppColors.onSurfaceVariant,
             fontWeight: FontWeight.w700,
           ),

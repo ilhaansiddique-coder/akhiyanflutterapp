@@ -30,7 +30,7 @@ class ShippingSettingsScreen extends ConsumerWidget {
         scrolledUnderElevation: 1,
         title: Text(
           'Shipping Zones',
-          style: AppTypography.h3.copyWith(
+          style: context.h3.copyWith(
             color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -54,7 +54,7 @@ class ShippingSettingsScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Manage shipping zones on web',
-                  style: AppTypography.h3.copyWith(
+                  style: context.h3.copyWith(
                       fontSize: 16, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -63,7 +63,7 @@ class ShippingSettingsScreen extends ConsumerWidget {
                   'multi-level editor that fits the web admin better. '
                   'Settings → Shipping on web admin.',
                   textAlign: TextAlign.center,
-                  style: AppTypography.bodySm
+                  style: context.bodySm
                       .copyWith(fontSize: 12, height: 1.45),
                 ),
               ],
