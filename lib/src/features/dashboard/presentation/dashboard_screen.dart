@@ -51,12 +51,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   static DateTimeRange _defaultRange() {
     final now = DateTime.now();
-    final yesterday = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).subtract(const Duration(days: 1));
-    return DateTimeRange(start: yesterday, end: yesterday);
+    final today = DateTime(now.year, now.month, now.day);
+    return DateTimeRange(start: today, end: today);
   }
 
   Future<void> _pickRange() async {
@@ -282,8 +278,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: _TopProductsTable(products: data.topProducts),
               ),
               const SizedBox(height: AppSpacing.md),
-              if (data.lowStock.isNotEmpty)
-                _LowStockAlertCard(items: data.lowStock),
+              _LowStockAlertCard(items: data.lowStock),
             ],
           ],
         ),
@@ -412,7 +407,12 @@ class _DashboardFilterCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Filter by Date',
-                style: context.bodySm.copyWith(
+                // Bricolage Grotesque (heading face) sized down to label.
+                // Using `context.h3.copyWith` keeps the heading fallback
+                // chain so Bengali digits / Taka still hit BanglaDigits.
+                style: context.h3.copyWith(
+                  fontSize: 14,
+                  height: 1.4,
                   fontWeight: FontWeight.w700,
                   color: AppColors.onBackground,
                 ),
@@ -450,7 +450,11 @@ class _DashboardFilterCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 label,
-                                style: context.bodySm.copyWith(
+                                // Bricolage face for the date-pill preset
+                                // label ("Today", "Yesterday", etc.).
+                                style: context.h3.copyWith(
+                                  fontSize: 14,
+                                  height: 1.4,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.primaryDarker,
                                 ),
@@ -1214,17 +1218,22 @@ class _LowStockAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEmpty = items.isEmpty;
     return _SurfaceCard(
-      borderColor: AppColors.errorContainer,
+      borderColor: isEmpty
+          ? AppColors.outlineVariant
+          : AppColors.errorContainer,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                color: AppColors.error,
+              Icon(
+                isEmpty
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.error_outline_rounded,
+                color: isEmpty ? AppColors.secondary : AppColors.error,
                 size: 18,
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -1233,20 +1242,26 @@ class _LowStockAlertCard extends StatelessWidget {
                 style: context.h3.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.error,
+                  color: isEmpty ? AppColors.onBackground : AppColors.error,
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Column(
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                _LowStockRow(item: items[i]),
-                if (i < items.length - 1) const SizedBox(height: AppSpacing.sm),
+          if (isEmpty)
+            const _EmptyStateText(
+              message: 'All products are well stocked.',
+            )
+          else
+            Column(
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  _LowStockRow(item: items[i]),
+                  if (i < items.length - 1)
+                    const SizedBox(height: AppSpacing.sm),
+                ],
               ],
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -1648,7 +1663,11 @@ class _EmptyStateText extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: context.bodySm.copyWith(
+        // Bricolage face for empty-state messages so they read like a
+        // section heading rather than body copy.
+        style: context.h3.copyWith(
+          fontSize: 14,
+          height: 1.4,
           color: AppColors.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),

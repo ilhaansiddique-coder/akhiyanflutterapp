@@ -104,7 +104,10 @@ class _SidebarBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentRoute = GoRouterState.of(context).matchedLocation;
     final asyncUser = ref.watch(currentUserProvider);
-    final session = ref.watch(authControllerProvider);
+    // authControllerProvider is now AsyncValue<User?>. Use `.valueOrNull`
+    // so we still get the cached User during refresh, and fall back
+    // gracefully while it's loading or signed out.
+    final session = ref.watch(authControllerProvider).value;
     final user = asyncUser.value;
     final name = user?.name ?? session?.name ?? '';
     final email = user?.email ?? '';

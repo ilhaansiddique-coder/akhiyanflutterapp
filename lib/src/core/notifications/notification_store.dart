@@ -1,8 +1,7 @@
+import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
 
 /// Visual emphasis level emitted by the backend.
 enum NotifySeverity { info, warn, alert }

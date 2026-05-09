@@ -1,6 +1,5 @@
 import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
 import 'package:akhiyan_admin/src/features/analytics/presentation/analytics_screen.dart';
-import 'package:akhiyan_admin/src/features/auth/domain/entities/user.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/screens/login_screen.dart';
 import 'package:akhiyan_admin/src/features/courier/presentation/courier_screen.dart';
@@ -53,24 +52,51 @@ final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // Repaint router when auth state changes so redirect runs again.
-  final authNotifier = ValueNotifier<User?>(
-    ref.read(authControllerProvider),
-  );
+  // Repaint router when auth state transitions (loading → data, sign-in,
+  // sign-out). We bump a counter rather than carrying the AsyncValue itself
+  // because ValueNotifier compares with `==` and AsyncValue identity isn't
+  // stable across rebuilds.
+  final authTick = ValueNotifier<int>(0);
   ref
-    ..onDispose(authNotifier.dispose)
-    ..listen(authControllerProvider, (_, next) => authNotifier.value = next);
+    ..onDispose(authTick.dispose)
+    ..listen(authControllerProvider, (_, _) => authTick.value++);
 
   return GoRouter(
     navigatorKey: _rootKey,
     initialLocation: AppRoute.dashboard.path,
-    refreshListenable: authNotifier,
+    refreshListenable: authTick,
     redirect: (context, state) {
-      final loggedIn = ref.read(authControllerProvider) != null;
+      final auth = ref.read(authControllerProvider);
       final goingToLogin = state.matchedLocation == AppRoute.login.path;
 
-      if (!loggedIn && !goingToLogin) return AppRoute.login.path;
-      if (loggedIn && goingToLogin) return AppRoute.dashboard.path;
+      // Auth still hydrating from secure storage on cold start. Don't
+      // redirect — let whatever route the user is on stay mounted (or
+      // /login if that's the URL). Once restore completes the listener
+      // bumps `authTick` and this redirect runs again with real state.
+      if (auth.isLoading) return null;
+
+      final loggedIn = auth.value != null;
+
+      if (!loggedIn && !goingToLogin) {
+        // Capture where the user wanted to go so we can return them after
+        // login. Using `state.uri.toString()` preserves query + path.
+        // Skip the dashboard default to avoid an ugly `?redirect=/dashboard`.
+        final original = state.uri.toString();
+        if (original == AppRoute.dashboard.path || original == '/') {
+          return AppRoute.login.path;
+        }
+        return '${AppRoute.login.path}?redirect=${Uri.encodeComponent(original)}';
+      }
+      if (loggedIn && goingToLogin) {
+        // After login, honor `?redirect=` if present.
+        final encoded = state.uri.queryParameters['redirect'];
+        if (encoded != null && encoded.isNotEmpty) {
+          final target = Uri.decodeComponent(encoded);
+          // Defensive: never let `?redirect=/login` cause a loop.
+          if (!target.startsWith(AppRoute.login.path)) return target;
+        }
+        return AppRoute.dashboard.path;
+      }
       return null;
     },
     routes: [

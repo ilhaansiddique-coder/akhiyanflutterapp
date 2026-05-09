@@ -55,7 +55,7 @@ class AppTheme {
       splashColor: Colors.transparent,
       highlightColor: AppColors.surfaceContainer.withValues(alpha: 0.5),
       hoverColor: AppColors.surfaceContainer.withValues(alpha: 0.4),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surfaceContainerLowest,
         foregroundColor: AppColors.onSurface,
         elevation: 0,
@@ -63,7 +63,7 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: AppTypography.h3,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        shape: const Border(
+        shape: Border(
           bottom: BorderSide(color: AppColors.outlineVariant),
         ),
       ),
