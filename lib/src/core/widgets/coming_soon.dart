@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:flutter/material.dart';
 
 /// Body widget shown when an endpoint returns 404 (backend not yet implemented).
 Widget comingSoonBody(String featureName) {

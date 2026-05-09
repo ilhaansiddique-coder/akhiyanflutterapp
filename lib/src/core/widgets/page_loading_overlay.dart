@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:flutter/material.dart';
 
 /// Centered "Loading page X..." card shown on top of a dimmed list while a
 /// pagination fetch is in flight. The list itself should be wrapped with an

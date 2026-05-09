@@ -447,9 +447,9 @@ class _ProductCard extends StatelessWidget {
               width: 64,
               height: 64,
               child: product.image.isEmpty
-                  ? ColoredBox(
+                  ? const ColoredBox(
                       color: AppColors.surfaceContainer,
-                      child: const Icon(
+                      child: Icon(
                         Icons.image_outlined,
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -457,9 +457,9 @@ class _ProductCard extends StatelessWidget {
                   : Image.network(
                       product.image,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => ColoredBox(
+                      errorBuilder: (_, _, _) => const ColoredBox(
                         color: AppColors.surfaceContainer,
-                        child: const Icon(
+                        child: Icon(
                           Icons.image_outlined,
                           color: AppColors.onSurfaceVariant,
                         ),

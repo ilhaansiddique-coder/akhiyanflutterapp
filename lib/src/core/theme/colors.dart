@@ -60,9 +60,9 @@ class AppColors {
   /// edge-to-edge displays it reads softer than pure white.
   static const Color background = Color(0xFFFFFBF5);
   static const Color backgroundAlt = Color(0xFFFFF7ED);    // orange-50
-  static const Color onBackground = Color(0xFF431407);     // foreground
+  static const Color onBackground = Color(0xFF1F2633);     // body text
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color onSurface = Color(0xFF1A1A1A);
+  static const Color onSurface = Color(0xFF1F2633);
   static const Color surfaceBright = Color(0xFFFFFFFF);
   static const Color surfaceDim = Color(0xFFF5F5F5);
   static const Color surfaceVariant = Color(0xFFFFF7ED);
@@ -85,10 +85,13 @@ class AppColors {
   static const Color slateBorder = Color(0xFFE2E8F0);
 
   // ─── Text — matches web --text-body / --text-muted / --text-light ──────
-  static const Color textBody = Color(0xFF404040);
+  // Body & foreground both resolve to the unified text colour #1F2633 —
+  // a slate/charcoal that reads cleaner against the warm cream background
+  // than the orange-tinted #431407 used previously.
+  static const Color textBody = Color(0xFF1F2633);
   static const Color textMuted = Color(0xFF888888);
   static const Color textLight = Color(0xFFAAAAAA);
-  static const Color foreground = Color(0xFF431407);       // darkest text
+  static const Color foreground = Color(0xFF1F2633);       // darkest text
 
   // ─── Error ─────────────────────────────────────────────────────────────
   static const Color error = Color(0xFFDC2626);            // sale-red on web

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.11.5
@@ -47,6 +47,11 @@ dependencies:
     sdk: flutter
   http: ^1.6.0
   image_picker: ^1.1.2
+  # Pure-Dart wrapper for the Shorebird Updater (native side already baked
+  # into the APK). Lets the app read its current patch number so we can show
+  # "v1.0.0+2 · patch 5" in the drawer footer for easy diagnostics.
+  shorebird_code_push: ^2.0.4
+  lucide_icons: ^0.257.0
 
 dev_dependencies:
   flutter_test:

@@ -1,9 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
 import 'package:akhiyan_admin/src/core/router/app_router.dart';
@@ -11,6 +7,9 @@ import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 // Login screen uses the same purple brand as the rest of the app
 // (`AppColors.primary` and `AppColors.primaryContainer`) — kept as local

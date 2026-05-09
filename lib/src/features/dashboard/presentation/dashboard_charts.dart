@@ -6,16 +6,16 @@ import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
 import 'package:flutter/material.dart';
 
-/// 7-day orders bar chart. Hand-rolled with CustomPaint to avoid pulling
+/// 7-day revenue bar chart. Hand-rolled with CustomPaint to avoid pulling
 /// in `fl_chart` / `charts_flutter` for two simple visualisations — keeps
 /// the supply chain tight and the rendering cost trivial.
 ///
-/// Reads from [RevenuePoint.orders] not `revenue` so the bars match the
-/// "Last 7 Days Orders" framing on the web admin's mobile dashboard.
+/// Reads from [RevenuePoint.revenue] (৳) — the donut alongside already
+/// answers "how many orders?" by status, so the bars answer the more
+/// useful "how much money?" question instead.
 class OrdersBarChartCard extends StatelessWidget {
   const OrdersBarChartCard({
-    super.key,
-    required this.points,
+    required this.points, super.key,
   });
 
   final List<RevenuePoint> points;
@@ -59,7 +59,7 @@ class OrdersBarChartCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm + 2),
               Expanded(
                 child: Text(
-                  'Last 7 Days Orders',
+                  'Last 7 Days Revenue',
                   style: AppTypography.h3.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -70,7 +70,7 @@ class OrdersBarChartCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           if (last7.isEmpty)
-            const _EmptyChartHint(message: 'No order data for the last 7 days yet.')
+            const _EmptyChartHint(message: 'No revenue data for the last 7 days yet.')
           else
             SizedBox(
               height: 180,
@@ -101,11 +101,12 @@ class _BarChartPainter extends CustomPainter {
     final chartArea =
         Rect.fromLTWH(0, topGutter, size.width, size.height - topGutter - labelGutter);
 
-    final maxOrders = points.fold<int>(0, (a, p) => p.orders > a ? p.orders : a);
+    final maxRevenue =
+        points.fold<double>(0, (a, p) => p.revenue > a ? p.revenue : a);
     // Round up to a sensible scale — without this a single tall bar fills
     // the chart and the others are invisible. `max(1, …)` avoids /0 when
     // every day is empty.
-    final scale = math.max(1, maxOrders);
+    final scale = math.max<double>(1, maxRevenue);
 
     // Bar geometry: even slots, 60% bar / 40% gap.
     final slotWidth = size.width / points.length;
@@ -126,7 +127,7 @@ class _BarChartPainter extends CustomPainter {
 
     for (var i = 0; i < points.length; i++) {
       final p = points[i];
-      final pct = p.orders / scale;
+      final pct = p.revenue / scale;
       final barHeight = chartArea.height * pct;
       final left = slotWidth * i + slotWidth * (1 - barRatio) / 2;
       final width = slotWidth * barRatio;
@@ -142,13 +143,13 @@ class _BarChartPainter extends CustomPainter {
       canvas.drawRRect(rect, barPaint);
 
       // Value label above each bar (skip 0 to keep the chart clean).
-      if (p.orders > 0) {
+      // Compact formatter — ৳1.2k beats ৳1234 at this width.
+      if (p.revenue > 0) {
         _drawText(
           canvas,
-          '${p.orders}',
+          _compactTaka(p.revenue),
           valueStyle,
           Offset(left + width / 2, top - 14),
-          align: TextAlign.center,
         );
       }
 
@@ -159,9 +160,24 @@ class _BarChartPainter extends CustomPainter {
         _shortDayLabel(p.date),
         labelStyle,
         Offset(left + width / 2, chartArea.bottom + 4),
-        align: TextAlign.center,
       );
     }
+  }
+
+  /// Compact taka formatter for bar value labels:
+  ///   980     -> ৳980
+  ///   1,250   -> ৳1.2k
+  ///   1,000   -> ৳1k     (no trailing .0)
+  ///   1,250,000 -> ৳1.2M
+  /// Keeps labels narrow enough to fit above thin bars without truncation.
+  static String _compactTaka(double v) {
+    String trim(double n) {
+      final s = n.toStringAsFixed(1);
+      return s.endsWith('.0') ? s.substring(0, s.length - 2) : s;
+    }
+    if (v >= 1000000) return '৳${trim(v / 1000000)}M';
+    if (v >= 1000) return '৳${trim(v / 1000)}k';
+    return '৳${v.toStringAsFixed(0)}';
   }
 
   static const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -193,7 +209,7 @@ class _BarChartPainter extends CustomPainter {
 // ─── Donut chart ────────────────────────────────────────────────────────────
 
 class StatusDonutCard extends StatelessWidget {
-  const StatusDonutCard({super.key, required this.statusBreakdown});
+  const StatusDonutCard({required this.statusBreakdown, super.key});
 
   final Map<String, int> statusBreakdown;
 

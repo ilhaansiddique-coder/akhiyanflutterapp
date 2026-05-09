@@ -53,7 +53,7 @@ class _CouponsScreenState extends ConsumerState<CouponsScreen> {
           IconButton(
             tooltip: 'New coupon',
             icon: const Icon(Icons.add, color: AppColors.primary),
-            onPressed: () => _showNewCouponSheet(),
+            onPressed: _showNewCouponSheet,
           ),
         ],
       ),
@@ -261,7 +261,7 @@ class _CouponCardState extends ConsumerState<_CouponCard> {
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         if (c.isExpired)
-                          _SmallPill(
+                          const _SmallPill(
                               label: 'EXPIRED',
                               bg: AppColors.errorContainer,
                               fg: AppColors.onErrorContainer),

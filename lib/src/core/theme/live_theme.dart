@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
 import 'package:akhiyan_admin/src/core/theme/app_theme.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Decoded payload from `GET /api/v1/m/theme`.
 ///

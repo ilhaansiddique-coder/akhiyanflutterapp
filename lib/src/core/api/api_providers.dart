@@ -448,7 +448,7 @@ final inventoryListProvider = NotifierProvider<
 /// 7 Days" section doesn't drag the analytics screen back to a 7d window
 /// — they're independent surfaces.
 final dashboardAnalyticsProvider = FutureProvider<AnalyticsData>(
-  (ref) => ref.watch(akhiyanApiProvider).analytics.fetch(period: '7d'),
+  (ref) => ref.watch(akhiyanApiProvider).analytics.fetch(),
 );
 
 final analyticsDataProvider = FutureProvider<AnalyticsData>(

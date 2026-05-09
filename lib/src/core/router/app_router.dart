@@ -1,23 +1,20 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
+import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
+import 'package:akhiyan_admin/src/features/analytics/presentation/analytics_screen.dart';
 import 'package:akhiyan_admin/src/features/auth/domain/entities/user.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/screens/login_screen.dart';
+import 'package:akhiyan_admin/src/features/courier/presentation/courier_screen.dart';
+import 'package:akhiyan_admin/src/features/customers/presentation/customer_detail_screen.dart';
+import 'package:akhiyan_admin/src/features/customers/presentation/customers_screen.dart';
 import 'package:akhiyan_admin/src/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:akhiyan_admin/src/features/fraud_security/presentation/fraud_security_screen.dart';
+import 'package:akhiyan_admin/src/features/inventory/presentation/inventory_screen.dart';
 import 'package:akhiyan_admin/src/features/marketing/presentation/coupons_screen.dart';
 import 'package:akhiyan_admin/src/features/marketing/presentation/flash_sales_screen.dart';
 import 'package:akhiyan_admin/src/features/marketing/presentation/landing_page_form_screen.dart';
 import 'package:akhiyan_admin/src/features/marketing/presentation/landing_pages_screen.dart';
 import 'package:akhiyan_admin/src/features/marketing/presentation/marketing_screen.dart';
 import 'package:akhiyan_admin/src/features/marketing/presentation/product_feeds_screen.dart';
-import 'package:akhiyan_admin/src/features/analytics/presentation/analytics_screen.dart';
-import 'package:akhiyan_admin/src/features/courier/presentation/courier_screen.dart';
-import 'package:akhiyan_admin/src/features/customers/presentation/customer_detail_screen.dart';
-import 'package:akhiyan_admin/src/features/customers/presentation/customers_screen.dart';
-import 'package:akhiyan_admin/src/features/fraud_security/presentation/fraud_security_screen.dart';
-import 'package:akhiyan_admin/src/features/inventory/presentation/inventory_screen.dart';
 import 'package:akhiyan_admin/src/features/notifications/presentation/notifications_screen.dart';
 import 'package:akhiyan_admin/src/features/orders/presentation/incomplete_orders_screen.dart';
 import 'package:akhiyan_admin/src/features/orders/presentation/order_detail_screen.dart';
@@ -35,7 +32,9 @@ import 'package:akhiyan_admin/src/features/settings/presentation/shipping_settin
 import 'package:akhiyan_admin/src/features/settings/presentation/site_settings_screen.dart';
 import 'package:akhiyan_admin/src/features/shortlinks/presentation/shortlinks_screen.dart';
 import 'package:akhiyan_admin/src/features/staff/presentation/staff_screen.dart';
-import 'package:akhiyan_admin/src/core/widgets/app_shell.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Route paths in one place — referenced from screens via `AppRoute.x.path`
 /// instead of magic strings.

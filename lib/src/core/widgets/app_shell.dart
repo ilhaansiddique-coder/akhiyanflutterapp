@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import 'package:akhiyan_admin/src/features/orders/application/orders_providers.dart';
 import 'package:akhiyan_admin/src/core/router/app_router.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/widgets/app_drawer.dart';
 import 'package:akhiyan_admin/src/core/widgets/create_menu.dart';
+import 'package:akhiyan_admin/src/features/orders/application/orders_providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 /// Global key for the shell's Scaffold so the hamburger button on the inner
 /// feature screens' `AppShellAppBar` can open the OUTER (shell) drawer —
@@ -40,15 +40,18 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   bool _drawerOpen = false;
 
+  // Lucide doesn't ship paired outline+filled variants the way Material
+  // does, so selected/unselected uses the same glyph and the active state
+  // is conveyed via colour + weight on the label below the icon.
   static const _destinations = <_NavDest>[
-    _NavDest(AppRoute.dashboard, Icons.dashboard_outlined,
-        Icons.dashboard, 'Dashboard'),
-    _NavDest(AppRoute.orders, Icons.shopping_cart_outlined,
-        Icons.shopping_cart, 'Orders'),
-    _NavDest(AppRoute.products, Icons.inventory_2_outlined,
-        Icons.inventory_2, 'Products'),
-    _NavDest(AppRoute.marketing, Icons.campaign_outlined,
-        Icons.campaign, 'Marketing'),
+    _NavDest(AppRoute.dashboard, LucideIcons.layoutDashboard,
+        LucideIcons.layoutDashboard, 'Dashboard'),
+    _NavDest(AppRoute.orders, LucideIcons.shoppingCart,
+        LucideIcons.shoppingCart, 'Orders'),
+    _NavDest(AppRoute.products, LucideIcons.package,
+        LucideIcons.package, 'Products'),
+    _NavDest(AppRoute.marketing, LucideIcons.megaphone,
+        LucideIcons.megaphone, 'Marketing'),
   ];
 
   int _indexFor(BuildContext context) {
@@ -87,7 +90,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               elevation: 6,
               shape: const CircleBorder(),
               tooltip: 'Create',
-              child: const Icon(Icons.add, size: 30),
+              child: const Icon(LucideIcons.plus, size: 28),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _drawerOpen ? null : BottomAppBar(

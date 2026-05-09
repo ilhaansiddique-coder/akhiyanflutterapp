@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:flutter/material.dart';
 
 /// Numbered pagination bar shown at the bottom of list screens.
 ///

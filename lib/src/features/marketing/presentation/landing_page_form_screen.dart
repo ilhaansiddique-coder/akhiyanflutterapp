@@ -21,7 +21,7 @@ import 'package:go_router/go_router.dart';
 /// raw values from the original payload). A summary card shows what's
 /// stored so the admin knows the data is intact.
 class LandingPageFormScreen extends ConsumerStatefulWidget {
-  const LandingPageFormScreen({super.key, required this.pageId});
+  const LandingPageFormScreen({required this.pageId, super.key});
 
   final String pageId;
 
@@ -337,12 +337,12 @@ class _Form extends StatelessWidget {
               AppSpacing.md,
               MediaQuery.of(context).padding.bottom + AppSpacing.sm,
             ),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surfaceContainerLowest,
-              border: const Border(
+              border: Border(
                 top: BorderSide(color: AppColors.slateBorder),
               ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
                   color: Color(0x0F000000),
                   blurRadius: 12,

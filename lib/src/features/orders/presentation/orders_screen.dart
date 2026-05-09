@@ -1,7 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
@@ -14,6 +10,9 @@ import 'package:akhiyan_admin/src/core/widgets/page_loading_overlay.dart';
 import 'package:akhiyan_admin/src/core/widgets/pagination_bar.dart';
 import 'package:akhiyan_admin/src/core/widgets/skeleton.dart';
 import 'package:akhiyan_admin/src/features/orders/domain/order.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Orders list — wired to the live `/orders` endpoint via [ordersListProvider].
 class OrdersScreen extends ConsumerStatefulWidget {

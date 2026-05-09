@@ -1,18 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-
 import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
 import 'package:akhiyan_admin/src/core/widgets/app_card.dart';
 import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
-import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
 import 'package:akhiyan_admin/src/core/widgets/states/states.dart';
 import 'package:akhiyan_admin/src/features/products/domain/product.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Combined Add/Edit product form. Wired to `/products` via
 /// [akhiyanApiProvider]: GET on edit-mode init, POST on Publish/Save Draft,

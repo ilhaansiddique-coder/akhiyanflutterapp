@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
-
-import 'package:akhiyan_admin/src/features/orders/domain/order.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:akhiyan_admin/src/features/orders/domain/order.dart';
+import 'package:flutter/material.dart';
 
 /// Pill-style status badge used in orders list / detail. Matches the
 /// container palette in `orders_list_1` prototype: light-tinted backgrounds

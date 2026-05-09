@@ -4,11 +4,15 @@
 class AppSpacing {
   AppSpacing._();
 
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 16;
-  static const double lg = 24;
-  static const double xl = 40;
+  // Tailwind rhythm: 4 / 8 / 12 / 16 / 24 / 40 (p-1 / p-2 / p-3 / p-4 /
+  // p-6 / p-10). Adding the 12px rung lets gutters and inner-card padding
+  // line up with the web admin pixel-for-pixel.
+  static const double xs = 4;   // p-1
+  static const double sm = 8;   // p-2
+  static const double s12 = 12; // p-3 — was missing; bridges sm and md
+  static const double md = 16;  // p-4
+  static const double lg = 24;  // p-6
+  static const double xl = 40;  // p-10
 
   /// Page horizontal gutter on mobile.
   static const double gutter = 16;

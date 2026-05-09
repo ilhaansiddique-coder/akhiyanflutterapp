@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 /// (variants, status badges, role pills) that don't generalise.
 
 class ListSearchField extends StatelessWidget {
-  const ListSearchField({super.key, required this.hint, required this.onChanged});
+  const ListSearchField({required this.hint, required this.onChanged, super.key});
 
   final String hint;
   final ValueChanged<String> onChanged;
@@ -53,9 +53,7 @@ class ListSearchField extends StatelessWidget {
 
 class ListThumbnail extends StatelessWidget {
   const ListThumbnail({
-    super.key,
-    required this.imageUrl,
-    required this.fallbackInitial,
+    required this.imageUrl, required this.fallbackInitial, super.key,
   });
 
   final String? imageUrl;
@@ -98,7 +96,7 @@ class ListThumbnail extends StatelessWidget {
 }
 
 class ListCountPill extends StatelessWidget {
-  const ListCountPill({super.key, required this.count, required this.active});
+  const ListCountPill({required this.count, required this.active, super.key});
 
   final int count;
   final bool active;
@@ -157,7 +155,7 @@ class ListSkeleton extends StatelessWidget {
 
 class ListInlineError extends StatelessWidget {
   const ListInlineError(
-      {super.key, required this.message, required this.onRetry});
+      {required this.message, required this.onRetry, super.key});
 
   final String message;
   final VoidCallback onRetry;

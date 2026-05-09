@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
+import 'package:flutter/material.dart';
 
 class ErrorView extends StatelessWidget {
   const ErrorView({

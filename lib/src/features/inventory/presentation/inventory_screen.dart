@@ -280,17 +280,17 @@ class _InventoryRow extends StatelessWidget {
               width: 48,
               height: 48,
               child: item.image.isEmpty
-                  ? ColoredBox(
+                  ? const ColoredBox(
                       color: AppColors.surfaceContainer,
-                      child: const Icon(Icons.image_outlined,
+                      child: Icon(Icons.image_outlined,
                           color: AppColors.onSurfaceVariant),
                     )
                   : Image.network(
                       item.image,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => ColoredBox(
+                      errorBuilder: (_, _, _) => const ColoredBox(
                         color: AppColors.surfaceContainer,
-                        child: const Icon(Icons.image_outlined,
+                        child: Icon(Icons.image_outlined,
                             color: AppColors.onSurfaceVariant),
                       ),
                     ),

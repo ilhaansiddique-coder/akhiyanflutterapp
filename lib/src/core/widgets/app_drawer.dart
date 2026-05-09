@@ -41,11 +41,11 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
     // Resolve primary from the live theme; fall back to the static brand
     // colour while the first fetch resolves.
-    final Color primary = themeAsync.maybeWhen(
+    final primary = themeAsync.maybeWhen(
       data: (t) => t.colorOr('primary', AppColors.primary),
       orElse: () => AppColors.primary,
     );
-    final String? logoUrl = themeAsync.maybeWhen(
+    final logoUrl = themeAsync.maybeWhen(
       data: (t) => t.branding['site_logo'],
       orElse: () => null,
     );
@@ -186,7 +186,7 @@ class _Header extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white24, width: 1)),
+        border: Border(bottom: BorderSide(color: Colors.white24)),
       ),
       child: Center(
         child: SizedBox(
@@ -360,12 +360,12 @@ class _NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color fg = !enabled
+    final fg = !enabled
         ? Colors.white.withValues(alpha: 0.35)
         : isActive
             ? Colors.white
             : Colors.white.withValues(alpha: 0.78);
-    final Color? bg = isActive ? Colors.white.withValues(alpha: 0.18) : null;
+    final bg = isActive ? Colors.white.withValues(alpha: 0.18) : null;
 
     return Material(
       color: Colors.transparent,
@@ -420,7 +420,7 @@ class _Footer extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.white24, width: 1)),
+        border: Border(top: BorderSide(color: Colors.white24)),
       ),
       child: Row(
         children: [
@@ -499,7 +499,7 @@ class _BuildInfoState extends State<_BuildInfo> {
   // Hardcoded so we don't depend on the package_info_plus plugin (which
   // would require a fresh APK build to add). Bump this string in lockstep
   // with `pubspec.yaml`'s `version:` field at every new APK release.
-  static const _releaseVersion = '1.0.0+2';
+  static const _releaseVersion = '1.0.0+3';
 
   final _updater = ShorebirdUpdater();
   String _patchLabel = '…';

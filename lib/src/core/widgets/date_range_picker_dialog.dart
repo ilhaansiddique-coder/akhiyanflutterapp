@@ -162,7 +162,7 @@ extension on _Preset {
         );
       case _Preset.thisYear:
         return DateTimeRange(
-          start: DateTime(today.year, 1),
+          start: DateTime(today.year),
           end: today,
         );
       case _Preset.allTime:

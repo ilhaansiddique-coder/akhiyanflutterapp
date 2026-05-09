@@ -143,9 +143,8 @@ class AdminUser {
   AdminUser({
     required this.id,
     required this.name,
-    this.email,
+    required this.role, this.email,
     this.phone,
-    required this.role,
     this.avatar,
     this.createdAt,
   });
@@ -191,10 +190,7 @@ class OrderListItem {
   OrderListItem({
     required this.id,
     required this.customerName,
-    this.customerPhone,
-    required this.total,
-    required this.status,
-    required this.paymentMethod,
+    required this.total, required this.status, required this.paymentMethod, this.customerPhone,
     this.paymentStatus,
     this.riskScore,
     this.courierSent = false,
@@ -205,7 +201,7 @@ class OrderListItem {
 
   factory OrderListItem.fromJson(Map<String, dynamic> json) {
     // items can come as `_count.items`, `items` array length, item_count, or itemCount.
-    int itemCount = 0;
+    var itemCount = 0;
     final ic = json['itemCount'] ?? json['item_count'];
     if (ic is int) {
       itemCount = ic;
@@ -249,6 +245,11 @@ class OrderListItem {
 /// hex `color` lets the backend customize chip / badge tint per
 /// status without a Flutter release.
 class OrderStatusOption {
+  const OrderStatusOption({
+    required this.key,
+    required this.label,
+    this.color,
+  });
 
   factory OrderStatusOption.fromJson(Map<String, dynamic> json) =>
       OrderStatusOption(
@@ -256,11 +257,6 @@ class OrderStatusOption {
         label: (json['label'] ?? json['key'] ?? '').toString(),
         color: json['color'] as String?,
       );
-  const OrderStatusOption({
-    required this.key,
-    required this.label,
-    this.color,
-  });
 
   final String key;
   final String label;
@@ -272,12 +268,9 @@ class OrderItem {
   OrderItem({
     required this.id,
     required this.orderId,
-    this.productId,
-    required this.productName,
+    required this.productName, required this.quantity, required this.price, this.productId,
     this.variantId,
     this.variantLabel,
-    required this.quantity,
-    required this.price,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) => OrderItem(
@@ -304,20 +297,10 @@ class Order {
 
   Order({
     required this.id,
-    this.userId,
-    required this.customerName,
-    required this.customerPhone,
+    required this.customerName, required this.customerPhone, required this.customerAddress, required this.subtotal, required this.shippingCost, required this.discount, required this.total, required this.status, required this.paymentMethod, required this.paymentStatus, this.userId,
     this.customerEmail,
-    required this.customerAddress,
     this.city,
     this.zipCode,
-    required this.subtotal,
-    required this.shippingCost,
-    required this.discount,
-    required this.total,
-    required this.status,
-    required this.paymentMethod,
-    required this.paymentStatus,
     this.transactionId,
     this.notes,
     this.courierSent = false,
@@ -396,12 +379,10 @@ class Product {
     required this.id,
     required this.name,
     required this.slug,
-    this.categoryId,
+    required this.price, required this.image, this.categoryId,
     this.brandId,
     this.description,
-    required this.price,
     this.originalPrice,
-    required this.image,
     this.images,
     this.badge,
     this.weight,
@@ -652,12 +633,11 @@ class CustomerDetail {
   CustomerDetail({
     required this.id,
     required this.name,
-    this.email,
+    required this.stats, this.email,
     this.phone,
     this.address,
     this.avatar,
     this.createdAt,
-    required this.stats,
     this.orders = const [],
   });
 
@@ -737,8 +717,7 @@ class FlashSale {
     required this.startsAt,
     required this.endsAt,
     required this.isActive,
-    this.productCount = 0,
-    required this.state,
+    required this.state, this.productCount = 0,
     this.createdAt,
   });
 
@@ -897,10 +876,9 @@ class FlaggedOrder {
     required this.customerPhone,
     required this.total,
     required this.status,
-    this.riskScore,
+    required this.reason, this.riskScore,
     this.ip,
     this.fpSeenCount,
-    required this.reason,
     this.createdAt,
   });
 
@@ -933,9 +911,8 @@ class StaffMember {
   StaffMember({
     required this.id,
     required this.name,
-    this.email,
+    required this.role, this.email,
     this.phone,
-    required this.role,
     this.avatar,
     this.createdAt,
   });
@@ -966,11 +943,9 @@ class InventoryItem {
     required this.slug,
     required this.image,
     required this.stock,
-    this.unlimitedStock,
+    required this.price, required this.level, this.unlimitedStock,
     this.soldCount = 0,
-    required this.price,
     this.hasVariations,
-    required this.level,
     this.variants = const [],
   });
 
@@ -1171,12 +1146,9 @@ class RevenuePoint {
 class TopProductAnalytics {
 
   TopProductAnalytics({
-    this.productId,
-    required this.name,
+    required this.name, required this.unitsSold, required this.revenue, this.productId,
     this.image,
     this.slug,
-    required this.unitsSold,
-    required this.revenue,
   });
 
   factory TopProductAnalytics.fromJson(Map<String, dynamic> json) => TopProductAnalytics(
@@ -2240,7 +2212,7 @@ class LandingPagesApi {
   /// admin handler. Sorted desc by createdAt server-side.
   Future<List<LandingPage>> list() async {
     final res = await _api.request('GET', '/landing-pages');
-    final list = (res is List ? res : (res['data'] as List? ?? [])) as List;
+    final list = (res is List ? res : (res['data'] as List? ?? []));
     return list
         .map((e) => LandingPage.fromJson(e as Map<String, dynamic>))
         .toList();

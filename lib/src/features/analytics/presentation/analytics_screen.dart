@@ -1,9 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:akhiyan_admin/api/akhiyan_api.dart' as api;
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
+import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
@@ -11,8 +8,10 @@ import 'package:akhiyan_admin/src/core/widgets/app_drawer.dart';
 import 'package:akhiyan_admin/src/core/widgets/coming_soon.dart';
 import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
 import 'package:akhiyan_admin/src/core/widgets/stat_card.dart';
-import 'package:akhiyan_admin/src/core/errors/error_mapper.dart';
 import 'package:akhiyan_admin/src/core/widgets/states/states.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});

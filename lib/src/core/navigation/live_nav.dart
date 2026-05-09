@@ -2,6 +2,7 @@ import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 /// Decoded payload from `GET /api/v1/m/ui/nav`.
 ///
@@ -137,10 +138,15 @@ LiveNav _filterHidden(LiveNav nav) {
 }
 
 /// Hardcoded fallback shown when `/ui/nav` is unreachable or returns
-/// non-JSON. Without this the entire sidebar errors out the moment the
-/// backend hiccups (Coolify cold-start, route undeployed, network blip).
-/// Mirrors the production menu structure as of 2026-05; should be kept
-/// roughly in sync with `src/lib/nav-tree.ts` on the web admin.
+/// non-JSON. Mirrors the web admin sidebar structure 1:1 so the mobile
+/// drawer feels identical. Items with a Flutter screen get a real
+/// `mobileRoute`; items still pending mobile builds get
+/// `mobileRoute: null`, which renders them greyed-out with a "coming
+/// soon" snackbar on tap.
+///
+/// Should be kept roughly in sync with `src/lib/nav-tree.ts` on the
+/// web admin. The two intentional omissions vs the web menu are
+/// **Banners** and **Menus** (filtered via [_kHiddenNavLabels]).
 const _kFallbackNav = LiveNav(
   groups: [
     LiveNavGroup(
@@ -150,50 +156,64 @@ const _kFallbackNav = LiveNav(
       mobileRoute: '/dashboard',
     ),
     LiveNavGroup(
-      i18nKey: 'productManagement',
-      label: 'Product Management',
+      i18nKey: 'products',
+      label: 'Products',
       icon: 'shoppingBag',
       items: [
         LiveNavLeaf(
-          i18nKey: 'products',
+          i18nKey: 'productsList',
           label: 'Products',
           icon: 'package',
           webRoute: '/admin/products',
           mobileRoute: '/products',
         ),
         LiveNavLeaf(
-          i18nKey: 'inventory',
-          label: 'Inventory',
-          icon: 'box',
-          webRoute: '/admin/inventory',
-          mobileRoute: '/inventory',
+          i18nKey: 'categories',
+          label: 'Categories',
+          icon: 'tag',
+          webRoute: '/admin/categories',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'brands',
+          label: 'Brands',
+          icon: 'award',
+          webRoute: '/admin/brands',
+          mobileRoute: null,
         ),
       ],
     ),
     LiveNavGroup(
-      i18nKey: 'orderManagement',
-      label: 'Order Management',
+      i18nKey: 'orders',
+      label: 'Orders',
       icon: 'shoppingCart',
       items: [
         LiveNavLeaf(
-          i18nKey: 'orders',
+          i18nKey: 'ordersList',
           label: 'Orders',
           icon: 'shoppingCart',
           webRoute: '/admin/orders',
           mobileRoute: '/orders',
         ),
         LiveNavLeaf(
-          i18nKey: 'courier',
-          label: 'Courier',
+          i18nKey: 'incompleteOrders',
+          label: 'Incomplete Orders',
+          icon: 'shoppingCart',
+          webRoute: '/admin/incomplete-orders',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'courierMonitor',
+          label: 'Courier Monitor',
           icon: 'truck',
           webRoute: '/admin/courier',
           mobileRoute: '/courier',
         ),
         LiveNavLeaf(
-          i18nKey: 'fraud',
-          label: 'Fraud & Security',
+          i18nKey: 'spamDetection',
+          label: 'Spam Detection',
           icon: 'shield',
-          webRoute: '/admin/fraud',
+          webRoute: '/admin/fraud-security',
           mobileRoute: '/fraud-security',
         ),
       ],
@@ -203,19 +223,28 @@ const _kFallbackNav = LiveNav(
       label: 'Customer',
       icon: 'users',
       items: [
+        // The Flutter "Users" screen at /customers shows both customers
+        // and staff via a role filter — same UX as the web "Users" page.
         LiveNavLeaf(
-          i18nKey: 'customers',
-          label: 'Customers',
+          i18nKey: 'users',
+          label: 'Users',
           icon: 'users',
           webRoute: '/admin/customers',
           mobileRoute: '/customers',
         ),
         LiveNavLeaf(
-          i18nKey: 'staff',
-          label: 'Staff',
-          icon: 'users',
-          webRoute: '/admin/staff',
-          mobileRoute: '/staff',
+          i18nKey: 'reviews',
+          label: 'Reviews',
+          icon: 'star',
+          webRoute: '/admin/reviews',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'formSubmissions',
+          label: 'Form Submissions',
+          icon: 'mail',
+          webRoute: '/admin/forms',
+          mobileRoute: null,
         ),
       ],
     ),
@@ -225,11 +254,94 @@ const _kFallbackNav = LiveNav(
       icon: 'zap',
       items: [
         LiveNavLeaf(
+          i18nKey: 'flashSales',
+          label: 'Flash Sales',
+          icon: 'zap',
+          webRoute: '/admin/flash-sales',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'coupons',
+          label: 'Coupons',
+          icon: 'percent',
+          webRoute: '/admin/coupons',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
           i18nKey: 'shortlinks',
           label: 'Shortlinks',
           icon: 'link',
           webRoute: '/admin/shortlinks',
           mobileRoute: '/shortlinks',
+        ),
+      ],
+    ),
+    // Top-level (no items) — matches the web admin which lists Landing
+    // Pages and Product Feeds as flat sidebar entries, not under a group.
+    // mobileRoute defaults to null → renders greyed-out "coming soon".
+    LiveNavGroup(
+      i18nKey: 'landingPages',
+      label: 'Landing Pages',
+      icon: 'layout',
+    ),
+    LiveNavGroup(
+      i18nKey: 'productFeeds',
+      label: 'Product Feeds',
+      icon: 'rss',
+    ),
+    LiveNavGroup(
+      i18nKey: 'settings',
+      label: 'Settings',
+      icon: 'settings',
+      items: [
+        LiveNavLeaf(
+          i18nKey: 'customizer',
+          label: 'Customizer',
+          icon: 'droplet',
+          webRoute: '/admin/customizer',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'shippingZones',
+          label: 'Shipping Zones',
+          icon: 'truck',
+          webRoute: '/admin/settings/shipping-zones',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'siteSettings',
+          label: 'Site Settings',
+          icon: 'settings',
+          webRoute: '/admin/settings',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'checkoutForm',
+          label: 'Checkout Form',
+          icon: 'shoppingCart',
+          webRoute: '/admin/settings/checkout',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'courierSettings',
+          label: 'Courier',
+          icon: 'truck',
+          webRoute: '/admin/settings/courier',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'email',
+          label: 'Email',
+          icon: 'mail',
+          webRoute: '/admin/settings/email',
+          mobileRoute: null,
+        ),
+        LiveNavLeaf(
+          i18nKey: 'language',
+          label: 'Language',
+          icon: 'globe',
+          webRoute: '/admin/settings/language',
+          mobileRoute: null,
         ),
       ],
     ),
@@ -268,70 +380,72 @@ final liveNavProvider = FutureProvider<LiveNav>((ref) async {
   }
 });
 
-/// Maps the Lucide-style icon-name strings the backend emits to Flutter
-/// Material icons. Names align with the `react-icons/fi` set used on the
-/// web sidebar so designers don't have to maintain two name lists.
+/// Maps the icon-name strings the backend emits to [LucideIcons] glyphs.
+/// Names align with the `react-icons/fi` (Feather/Lucide) set used on the
+/// web sidebar — same names, same strokes, identical visual on both
+/// platforms. A missing mapping falls back to a neutral circle so a new
+/// icon name added on the backend doesn't crash the drawer.
 IconData navIconFor(String name) {
   switch (name) {
     case 'home':
-      return Icons.home_outlined;
+      return LucideIcons.home;
     case 'box':
-      return Icons.inventory_2_outlined;
+      return LucideIcons.box;
     case 'tag':
-      return Icons.local_offer_outlined;
+      return LucideIcons.tag;
     case 'award':
-      return Icons.emoji_events_outlined;
+      return LucideIcons.award;
     case 'package':
-      return Icons.all_inbox_outlined;
+      return LucideIcons.package;
     case 'shoppingBag':
-      return Icons.shopping_bag_outlined;
+      return LucideIcons.shoppingBag;
     case 'shoppingCart':
-      return Icons.shopping_cart_outlined;
+      return LucideIcons.shoppingCart;
     case 'truck':
-      return Icons.local_shipping_outlined;
+      return LucideIcons.truck;
     case 'shield':
-      return Icons.shield_outlined;
+      return LucideIcons.shield;
     case 'users':
-      return Icons.people_outline;
+      return LucideIcons.users;
     case 'star':
-      return Icons.star_border;
+      return LucideIcons.star;
     case 'mail':
-      return Icons.mail_outline;
+      return LucideIcons.mail;
     case 'zap':
-      return Icons.bolt_outlined;
+      return LucideIcons.zap;
     case 'percent':
-      return Icons.percent_outlined;
+      return LucideIcons.percent;
     case 'link':
-      return Icons.link_outlined;
+      return LucideIcons.link;
     case 'layout':
-      return Icons.dashboard_outlined;
+      return LucideIcons.layout;
     case 'image':
-      return Icons.image_outlined;
+      return LucideIcons.image;
     case 'menu':
-      return Icons.menu;
+      return LucideIcons.menu;
     case 'rss':
-      return Icons.rss_feed_outlined;
+      return LucideIcons.rss;
     case 'fileText':
-      return Icons.description_outlined;
+      return LucideIcons.fileText;
     case 'info':
-      return Icons.info_outline;
+      return LucideIcons.info;
     case 'refreshCw':
-      return Icons.refresh_outlined;
+      return LucideIcons.refreshCw;
     case 'barChart':
-      return Icons.bar_chart_outlined;
+      return LucideIcons.barChart;
     case 'bell':
-      return Icons.notifications_outlined;
+      return LucideIcons.bell;
     case 'settings':
-      return Icons.settings_outlined;
+      return LucideIcons.settings;
     case 'droplet':
-      return Icons.water_drop_outlined;
+      return LucideIcons.droplet;
     case 'globe':
-      return Icons.language_outlined;
+      return LucideIcons.globe;
     case 'chevronRight':
-      return Icons.chevron_right;
+      return LucideIcons.chevronRight;
     case 'chevronDown':
-      return Icons.expand_more;
+      return LucideIcons.chevronDown;
     default:
-      return Icons.circle_outlined;
+      return LucideIcons.circle;
   }
 }

@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
 import 'package:akhiyan_admin/src/core/widgets/notification_bell.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
   const CustomerDetailScreen({required this.customerId, super.key});

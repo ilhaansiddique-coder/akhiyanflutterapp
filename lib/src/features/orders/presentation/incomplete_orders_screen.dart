@@ -35,7 +35,7 @@ final incompleteOrdersProvider =
   // page each, default 20) so this stays cheap even on slow networks.
   const inFlight = ['pending', 'processing', 'on_hold', 'confirmed'];
   final pages = await Future.wait(
-    inFlight.map((s) => orders.list(status: s, page: 1, pageSize: 50)),
+    inFlight.map((s) => orders.list(status: s, pageSize: 50)),
   );
   final all = <api.OrderListItem>[];
   final seen = <String>{};

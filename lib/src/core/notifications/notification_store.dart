@@ -28,10 +28,9 @@ class NotificationEntry {
     required this.kind,
     required this.title,
     required this.body,
-    this.href,
+    required this.receivedAt, this.href,
     this.icon,
     this.severity = NotifySeverity.info,
-    required this.receivedAt,
     this.read = false,
   });
   final String id; // synthesised from kind + channel + version (dedupe key)

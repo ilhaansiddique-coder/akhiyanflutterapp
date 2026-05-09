@@ -1,13 +1,12 @@
-import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart' show AppShellAppBar;
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:akhiyan_admin/src/core/notifications/notification_store.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
 import 'package:akhiyan_admin/src/core/widgets/app_drawer.dart';
+import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart' show AppShellAppBar;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Live notification panel — wired to [notificationStoreProvider] which is
 /// fed by the SSE stream. Each backend `bumpVersion(channel, notify)` with

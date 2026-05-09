@@ -1,9 +1,8 @@
 import 'package:akhiyan_admin/app.dart' show AkhiyanAdminApp;
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 import 'package:akhiyan_admin/src/core/sync/sync_client.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// App-root listener that refreshes resource providers when their SSE
 /// channel bumps. This is the bridge between the network-level [SyncClient]
@@ -89,6 +88,14 @@ class _SyncInvalidator {
         // invalidate is supported in Riverpod 3 and propagates to all
         // currently-built keys.
         _ref.invalidate(dashboardDataProvider);
+        // Charts (bar + donut) on the dashboard read from
+        // dashboardAnalyticsProvider (period=7d), and the standalone
+        // analytics screen reads from analyticsDataProvider (period=30d).
+        // Both windows include the just-arrived order, so refetch them
+        // alongside the dashboard payload — otherwise the bars and the
+        // status donut lag behind the recent-orders list by a refresh.
+        _ref.invalidate(dashboardAnalyticsProvider);
+        _ref.invalidate(analyticsDataProvider);
       case 'products':
         _ref.read(productsListProvider.notifier).refresh();
         // Inventory mirrors product stock; refresh that page too.

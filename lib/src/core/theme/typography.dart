@@ -1,7 +1,6 @@
+import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:akhiyan_admin/src/core/theme/colors.dart';
 
 /// Typography ported from the Stitch prototype.
 ///

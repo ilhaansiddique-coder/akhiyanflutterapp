@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
 import 'package:akhiyan_admin/src/core/theme/spacing.dart';
 import 'package:akhiyan_admin/src/core/theme/typography.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Material 3 theme assembled from Akhiyan design tokens.
 ///
@@ -48,6 +47,14 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
       textTheme: AppTypography.textTheme,
+      // Tap feedback should read like Tailwind's `hover:bg-slate-50` — a
+      // subtle background tint, NOT Material's circular ripple. We drop
+      // the splash entirely and rely on the highlight rectangle that
+      // InkWell paints behind the splash for press feedback.
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: AppColors.surfaceContainer.withValues(alpha: 0.5),
+      hoverColor: AppColors.surfaceContainer.withValues(alpha: 0.4),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surfaceContainerLowest,
         foregroundColor: AppColors.onSurface,

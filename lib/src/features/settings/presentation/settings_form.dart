@@ -82,11 +82,7 @@ abstract class SettingsFormState<T extends ConsumerStatefulWidget>
           border: const OutlineInputBorder(),
         ),
         onTap: isMasked
-            ? () {
-                // First tap on a masked secret: clear so the admin types
-                // the real value rather than appending to the mask glyphs.
-                ctrl.clear();
-              }
+            ? ctrl.clear
             : null,
       ),
     );
@@ -370,11 +366,7 @@ abstract class SettingsFormState<T extends ConsumerStatefulWidget>
 /// look.
 class SettingsCard extends StatelessWidget {
   const SettingsCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.child,
+    required this.icon, required this.title, required this.subtitle, required this.child, super.key,
   });
 
   final IconData icon;

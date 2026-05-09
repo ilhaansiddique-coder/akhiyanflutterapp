@@ -1,8 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-
 import 'package:akhiyan_admin/api/akhiyan_api.dart';
 import 'package:akhiyan_admin/src/core/api/api_providers.dart';
 import 'package:akhiyan_admin/src/core/theme/colors.dart';
@@ -13,6 +8,10 @@ import 'package:akhiyan_admin/src/core/widgets/app_shell_app_bar.dart';
 import 'package:akhiyan_admin/src/core/widgets/date_range_picker_dialog.dart';
 import 'package:akhiyan_admin/src/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:akhiyan_admin/src/features/dashboard/presentation/dashboard_charts.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 /// Dashboard home — bound to live data via [dashboardDataProvider].
 /// Hardcoded numbers were replaced with reactive bindings; while data is
@@ -118,6 +117,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: AppSpacing.lg),
             ],
             _StatsGrid(cards: data?.cards),
+            const SizedBox(height: AppSpacing.s12),
+            // Quick at-a-glance status counts (e.g. "5 pending · 12
+            // confirmed · 3 returned") sourced from the same analytics
+            // payload that feeds the donut. Hidden when every status is
+            // zero so an empty 7d window doesn't show an empty strip.
+            const _StatusCountStrip(),
             const SizedBox(height: 16),
             // Analytics charts — sourced from /m/analytics?period=7d. Lives
             // in its own provider so a date-range change on the stats
@@ -139,6 +144,126 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _TopProducts(products: data?.topProducts, isLoading: isLoading),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Status count strip ───────────────────────────────────────────────────
+
+/// Horizontal scroll of compact status tiles (e.g. "5 Pending", "12
+/// Confirmed"). Pulls from the same `dashboardAnalyticsProvider` as the
+/// donut so colours and counts always agree across the two surfaces.
+///
+/// While the analytics fetch is in flight the strip collapses to a 0-height
+/// SizedBox — there's no value in showing skeleton chips above the donut
+/// which is already showing its own skeleton.
+class _StatusCountStrip extends ConsumerWidget {
+  const _StatusCountStrip();
+
+  // Same palette as StatusDonutCard so the dot under each tile matches the
+  // ring slice on the donut below.
+  static const _statusColors = <String, Color>{
+    'delivered': AppColors.success,
+    'confirmed': AppColors.success,
+    'courier_sent': AppColors.secondary,
+    'processing': AppColors.info,
+    'pending': AppColors.warning,
+    'on_hold': AppColors.outline,
+    'cancelled': AppColors.error,
+    'returned': AppColors.tertiary,
+    'trashed': AppColors.outline,
+  };
+
+  static const _statusLabels = <String, String>{
+    'delivered': 'Delivered',
+    'confirmed': 'Confirmed',
+    'courier_sent': 'Courier Sent',
+    'processing': 'Processing',
+    'pending': 'Pending',
+    'on_hold': 'On Hold',
+    'cancelled': 'Cancelled',
+    'returned': 'Returned',
+    'trashed': 'Trashed',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(dashboardAnalyticsProvider);
+    final breakdown = async.value?.statusBreakdown ?? const <String, int>{};
+    final entries = breakdown.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    if (entries.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: entries.length,
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (_, i) {
+          final e = entries[i];
+          return _StatusCountTile(
+            color: _statusColors[e.key] ?? AppColors.outline,
+            label: _statusLabels[e.key] ?? e.key,
+            count: e.value,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _StatusCountTile extends StatelessWidget {
+  const _StatusCountTile({
+    required this.color,
+    required this.label,
+    required this.count,
+  });
+
+  final Color color;
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s12,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.slateBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$count',
+            style: AppTypography.bodySm.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.onBackground,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AppTypography.bodySm.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.outline,
+            ),
+          ),
+        ],
       ),
     );
   }
